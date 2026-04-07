@@ -472,6 +472,21 @@ footer span{color:var(--teal);}
 }
 </style>
 </head>
+<script>
+  // Robust loader dismissal — fires on load OR after max 3.5s, whichever comes first
+  function hideLoader() {
+    const loader = document.getElementById('loader');
+    if (loader) loader.classList.add('hidden');
+  }
+
+  // Primary: dismiss after page is fully loaded
+  window.addEventListener('load', function() {
+    setTimeout(hideLoader, 300); // small delay so the bar animation completes
+  });
+
+  // Fallback: force-dismiss after 3.5s no matter what
+  setTimeout(hideLoader, 3500);
+</script>
 <body>
 <!-- LOADER -->
 <div id="loader">
