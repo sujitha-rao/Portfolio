@@ -900,7 +900,7 @@ footer span{color:var(--teal);}
 
 <!-- CHATBOX -->
 <button class="chatbox-trigger" id="chatTrigger" onclick="toggleChat()" title="Chat with Sujitha">
-  <div class="chatbox-badge" id="chatBadge"></div>
+  <div class="chatbox-badge" id="chatBadge" style="display:none;"></div>
   <svg id="chatIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </button>
 
@@ -937,11 +937,12 @@ footer span{color:var(--teal);}
 // ═══════════════════════════════════════════
 // LOADER
 // ═══════════════════════════════════════════
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.getElementById('loader').classList.add('hidden');
-  }, 2200);
-});
+function hideLoader() {
+  const l = document.getElementById('loader');
+  if (l) l.classList.add('hidden');
+}
+window.addEventListener('load', () => setTimeout(hideLoader, 1800));
+setTimeout(hideLoader, 3500);
 
 // ═══════════════════════════════════════════
 // MOVING BACKGROUND CANVAS
@@ -1027,7 +1028,11 @@ window.addEventListener('load', () => {
 // CURSOR
 // ═══════════════════════════════════════════
 const cur = document.getElementById('cursor'), ring = document.getElementById('cursorRing');
-let mx=0, my=0, rx=0, ry=0;
+let mx = window.innerWidth/2, my = window.innerHeight/2, rx = mx, ry = my;
+// Show cursor at center initially
+cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+
 document.addEventListener('mousemove', e => {
   mx = e.clientX; my = e.clientY;
   cur.style.left = mx + 'px'; cur.style.top = my + 'px';
@@ -1083,6 +1088,17 @@ document.querySelectorAll('.reveal,.reveal-left,.reveal-right,.reveal-scale,.tim
 const sb = document.querySelector('.stats-band .reveal') || document.querySelector('.stats-band');
 if (sb) obs.observe(sb);
 
+// Safety fallback: ensure all reveal elements show after 4s
+setTimeout(() => {
+  document.querySelectorAll('.reveal,.reveal-left,.reveal-right,.reveal-scale,.timeline-item').forEach(el => {
+    el.classList.add('visible');
+    el.querySelectorAll('[data-target]').forEach(el2 => { if (!el2.dataset.counted) { el2.dataset.counted='1'; animCount(el2, +el2.dataset.target); } });
+    el.querySelectorAll('.skill-pills').forEach((row,ri) => {
+      Array.from(row.children).forEach((pill,i) => setTimeout(() => pill.classList.add('anim'), ri*60+i*40));
+    });
+  });
+}, 4000);
+
 function animCount(el, target) {
   let v = 0; const step = Math.max(1, Math.ceil(target / 45));
   const t = setInterval(() => { v = Math.min(v + step, target); el.textContent = v; if (v >= target) clearInterval(t); }, 30);
@@ -1137,7 +1153,7 @@ function revealNextPostit() {
     // Update hint text
     const hint = document.querySelector('.photo-hint');
     if (piIdx >= totalPi) {
-      hint.innerHTML = '&#10003; All revealed &mdash; click 'read +' on each!';
+      hint.innerHTML = '&#10003; All revealed! Click "read +" on each note.';
     } else {
       hint.innerHTML = `<span class="photo-hint-arrow">&#128070;</span> ${totalPi - piIdx} more to reveal`;
     }
@@ -1167,11 +1183,13 @@ const chatResponses = {
 
 function toggleChat() {
   chatOpen = !chatOpen;
-  document.getElementById('chatbox').classList.toggle('open', chatOpen);
-  document.getElementById('chatTrigger').classList.toggle('open', chatOpen);
+  const box = document.getElementById('chatbox');
+  const trigger = document.getElementById('chatTrigger');
+  if (box) box.classList.toggle('open', chatOpen);
+  if (trigger) trigger.classList.toggle('open', chatOpen);
   const badge = document.getElementById('chatBadge');
-  if (chatOpen) badge.style.display = 'none';
-  if (chatOpen) document.getElementById('chatInput').focus();
+  if (chatOpen && badge) badge.style.display = 'none';
+  if (chatOpen) { const inp = document.getElementById('chatInput'); if (inp) inp.focus(); }
 }
 
 function sendQuick(msg) {
