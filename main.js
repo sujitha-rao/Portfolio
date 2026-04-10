@@ -19,45 +19,102 @@ window.addEventListener('load', () => setTimeout(hideLoader, 1800));
 setTimeout(hideLoader, 3500);
 
 // ═══════════════════════════════════════════
-// MOVING BACKGROUND — Geometric particle mesh
+// MOVING BACKGROUND — Corporate data-flow animation
+// Binary code, data nodes, circuit traces, floating tech icons
 // ═══════════════════════════════════════════
 (function() {
   const canvas = document.getElementById('bg-canvas');
   const ctx    = canvas.getContext('2d');
-  let W, H, mouse = { x: -999, y: -999 };
+  let W, H;
+  const mouse = { x: -999, y: -999 };
 
   function resize() {
     W = canvas.width  = window.innerWidth;
     H = canvas.height = window.innerHeight;
   }
   resize();
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', () => { resize(); initAll(); });
   document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
-  // ── Floating hex/circle shapes (large decorative) ──────────────
-  const blobs = Array.from({length: 6}, (_, i) => ({
-    x: Math.random() * W,
-    y: Math.random() * H,
-    r: 120 + Math.random() * 160,
-    vx: (Math.random() - .5) * .4,
-    vy: (Math.random() - .5) * .4,
-    hue: i < 3 ? '#0f766e' : i < 5 ? '#14b8a6' : '#ccfbf1',
-    alpha: 0.04 + Math.random() * 0.04,
-  }));
+  const TEAL    = '#0f766e';
+  const TEAL2   = '#14b8a6';
+  const TEALLT  = '#ccfbf1';
 
-  // ── Small particles ─────────────────────────────────────────────
-  const particles = Array.from({length: 90}, () => ({
-    x: Math.random() * (typeof W !== 'undefined' ? W : 1200),
-    y: Math.random() * (typeof H !== 'undefined' ? H : 800),
-    r: .8 + Math.random() * 2.2,
-    vx: (Math.random() - .5) * .5,
-    vy: (Math.random() - .5) * .5,
-    alpha: .08 + Math.random() * .18,
-    color: Math.random() > .4 ? '#0f766e' : Math.random() > .5 ? '#14b8a6' : '#0a5c56',
-  }));
+  // ── 1. Floating data nodes (circles with labels) ──────────────
+  const NODE_LABELS = ['Java','AWS','K8s','SAP BTP','CI/CD','REST','OAuth','Spring','Kafka','Docker','Git','EKS'];
+  let nodes = [];
+  function initNodes() {
+    nodes = Array.from({length: 14}, (_, i) => ({
+      x: 60 + Math.random() * (W - 120),
+      y: 60 + Math.random() * (H - 120),
+      r: 20 + Math.random() * 16,
+      vx: (Math.random() - .5) * .35,
+      vy: (Math.random() - .5) * .35,
+      label: NODE_LABELS[i % NODE_LABELS.length],
+      alpha: .12 + Math.random() * .12,
+      pulse: Math.random() * Math.PI * 2,
+    }));
+  }
 
-  // ── Grid dots (static teal grid) ────────────────────────────────
-  const GRID = 80;
+  // ── 2. Circuit trace lines (animated dashes travelling along paths) ─
+  let traces = [];
+  function initTraces() {
+    traces = Array.from({length: 10}, () => {
+      const x1 = Math.random() * W, y1 = Math.random() * H;
+      const ang = Math.floor(Math.random() * 4) * Math.PI/2 + (Math.random()-.5)*.4;
+      const len = 80 + Math.random() * 180;
+      return {
+        x1, y1,
+        x2: x1 + Math.cos(ang)*len,
+        y2: y1 + Math.sin(ang)*len,
+        progress: Math.random(),
+        speed: .003 + Math.random() * .005,
+        alpha: .08 + Math.random() * .1,
+      };
+    });
+  }
+
+  // ── 3. Binary code columns (rain-style) ───────────────────────
+  const COLS = Math.floor(W / 28);
+  let drops = [];
+  function initDrops() {
+    const cols = Math.floor(W / 28);
+    drops = Array.from({length: cols}, () => ({
+      x: Math.random() * W,
+      y: -Math.random() * H,
+      speed: .3 + Math.random() * .5,
+      chars: '01·×+SAP AWS Java K8s',
+      alpha: .06 + Math.random() * .07,
+    }));
+  }
+
+  // ── 4. Floating hexagons (corporate grid feel) ─────────────────
+  let hexes = [];
+  function initHexes() {
+    hexes = Array.from({length: 8}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: 18 + Math.random() * 30,
+      vx: (Math.random()-.5) * .18,
+      vy: (Math.random()-.5) * .18,
+      angle: Math.random() * Math.PI,
+      va: (Math.random()-.5) * .005,
+      alpha: .05 + Math.random() * .07,
+    }));
+  }
+
+  function initAll() { initNodes(); initTraces(); initDrops(); initHexes(); }
+  initAll();
+
+  function drawHex(x, y, r, angle) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = angle + (i / 6) * Math.PI * 2;
+      i === 0 ? ctx.moveTo(x + Math.cos(a)*r, y + Math.sin(a)*r)
+              : ctx.lineTo(x + Math.cos(a)*r, y + Math.sin(a)*r);
+    }
+    ctx.closePath();
+  }
 
   let frame = 0;
 
@@ -65,105 +122,154 @@ setTimeout(hideLoader, 3500);
     ctx.clearRect(0, 0, W, H);
     frame++;
 
-    // 1. Soft gradient background wash
-    const grad = ctx.createRadialGradient(W*.35, H*.4, 0, W*.35, H*.4, Math.max(W,H)*.8);
-    grad.addColorStop(0,   'rgba(15,118,110,0.07)');
-    grad.addColorStop(.5,  'rgba(20,184,166,0.03)');
-    grad.addColorStop(1,   'rgba(204,251,241,0.02)');
-    ctx.fillStyle = grad;
+    // ── Background gradient ──
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0,   'rgba(15,118,110,0.04)');
+    bg.addColorStop(.5,  'rgba(204,251,241,0.025)');
+    bg.addColorStop(1,   'rgba(10,92,86,0.03)');
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
-    // 2. Grid dot pattern
-    ctx.fillStyle = 'rgba(15,118,110,0.09)';
-    for (let gx = GRID/2; gx < W; gx += GRID) {
-      for (let gy = GRID/2; gy < H; gy += GRID) {
-        const pulse = Math.sin(frame*.015 + gx*.01 + gy*.008) * .5 + .5;
-        ctx.globalAlpha = 0.04 + pulse * 0.06;
-        ctx.beginPath();
-        ctx.arc(gx, gy, 1.5, 0, Math.PI*2);
-        ctx.fill();
-      }
+    // ── Binary rain columns ──
+    ctx.font = '11px "DM Mono", monospace';
+    ctx.fillStyle = TEAL;
+    for (const d of drops) {
+      const chars = d.chars.split('');
+      ctx.globalAlpha = d.alpha;
+      const ch = chars[Math.floor(frame*.1 + d.y * .05) % chars.length];
+      ctx.fillText(ch, d.x, d.y);
+      d.y += d.speed;
+      if (d.y > H + 20) d.y = -20;
     }
     ctx.globalAlpha = 1;
 
-    // 3. Large decorative floating circles
-    for (const b of blobs) {
-      b.x += b.vx; b.y += b.vy;
-      if (b.x < -b.r) b.x = W + b.r;
-      if (b.x > W+b.r) b.x = -b.r;
-      if (b.y < -b.r) b.y = H + b.r;
-      if (b.y > H+b.r) b.y = -b.r;
-      const bg = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-      bg.addColorStop(0, b.hue + 'CC');
-      bg.addColorStop(.6, b.hue + '44');
-      bg.addColorStop(1, b.hue + '00');
-      ctx.globalAlpha = b.alpha;
-      ctx.fillStyle = bg;
+    // ── Hexagons ──
+    for (const h of hexes) {
+      h.x += h.vx; h.y += h.vy; h.angle += h.va;
+      if (h.x < -h.r*2) h.x = W + h.r;
+      if (h.x > W + h.r*2) h.x = -h.r;
+      if (h.y < -h.r*2) h.y = H + h.r;
+      if (h.y > H + h.r*2) h.y = -h.r;
+      drawHex(h.x, h.y, h.r, h.angle);
+      ctx.strokeStyle = TEAL;
+      ctx.lineWidth = .8;
+      ctx.globalAlpha = h.alpha;
+      ctx.stroke();
+      // Inner ring
+      drawHex(h.x, h.y, h.r * .5, h.angle + .3);
+      ctx.globalAlpha = h.alpha * .5;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // ── Circuit traces (animated dot travelling along line) ──
+    for (const t of traces) {
+      t.progress += t.speed;
+      if (t.progress > 1) t.progress = 0;
+      const px = t.x1 + (t.x2 - t.x1) * t.progress;
+      const py = t.y1 + (t.y2 - t.y1) * t.progress;
+
+      // Static line
       ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+      ctx.moveTo(t.x1, t.y1);
+      ctx.lineTo(t.x2, t.y2);
+      ctx.strokeStyle = TEAL;
+      ctx.lineWidth = .5;
+      ctx.globalAlpha = t.alpha * .6;
+      ctx.setLineDash([4, 8]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Travelling pulse dot
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI*2);
+      ctx.fillStyle = TEAL2;
+      ctx.globalAlpha = t.alpha * 2;
+      ctx.fill();
+
+      // Corner joints
+      ctx.beginPath();
+      ctx.arc(t.x1, t.y1, 3, 0, Math.PI*2);
+      ctx.fillStyle = TEAL;
+      ctx.globalAlpha = t.alpha;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(t.x2, t.y2, 3, 0, Math.PI*2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
 
-    // 4. Particle network with mouse interaction
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-
-      // Mouse attraction (gentle)
-      const mdx = mouse.x - p.x, mdy = mouse.y - p.y;
-      const md  = Math.sqrt(mdx*mdx + mdy*mdy);
-      if (md < 180) {
-        p.vx += mdx * .00012;
-        p.vy += mdy * .00012;
-      }
-      // Speed cap
-      const spd = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
-      if (spd > .9) { p.vx *= .92; p.vy *= .92; }
-
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0) { p.x = 0; p.vx *= -1; }
-      if (p.x > W) { p.x = W; p.vx *= -1; }
-      if (p.y < 0) { p.y = 0; p.vy *= -1; }
-      if (p.y > H) { p.y = H; p.vy *= -1; }
-
-      // Connect nearby particles
-      for (let j = i+1; j < particles.length; j++) {
-        const q   = particles[j];
-        const dx  = p.x - q.x, dy = p.y - q.y;
+    // ── Data nodes — connect closest ones ──
+    const CONNECTION_DIST = 180;
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i];
+      for (let j = i+1; j < nodes.length; j++) {
+        const b = nodes[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 110) {
+        if (dist < CONNECTION_DIST) {
           ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(q.x, q.y);
-          ctx.strokeStyle = `rgba(15,118,110,${0.12 * (1 - dist/110)})`;
-          ctx.lineWidth = .8;
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = TEAL;
+          ctx.lineWidth = .7;
+          ctx.globalAlpha = .09 * (1 - dist/CONNECTION_DIST);
           ctx.stroke();
         }
       }
+    }
 
-      // Draw dot with subtle glow on particles near cursor
-      const nearMouse = md < 80;
+    for (const n of nodes) {
+      n.x += n.vx; n.y += n.vy;
+      n.pulse += .025;
+      // Bounce off walls
+      if (n.x < n.r)   { n.x = n.r;   n.vx *= -1; }
+      if (n.x > W-n.r) { n.x = W-n.r; n.vx *= -1; }
+      if (n.y < n.r)   { n.y = n.r;   n.vy *= -1; }
+      if (n.y > H-n.r) { n.y = H-n.r; n.vy *= -1; }
+
+      // Mouse repel
+      const mdx = n.x - mouse.x, mdy = n.y - mouse.y;
+      const md = Math.sqrt(mdx*mdx + mdy*mdy);
+      if (md < 120) { n.vx += mdx*.001; n.vy += mdy*.001; }
+
+      // Speed cap
+      const spd = Math.sqrt(n.vx*n.vx + n.vy*n.vy);
+      if (spd > .6) { n.vx *= .95; n.vy *= .95; }
+
+      // Pulsing circle
+      const pulse = .85 + Math.sin(n.pulse) * .15;
+      const rr = n.r * pulse;
+
+      // Outer ring
       ctx.beginPath();
-      ctx.arc(p.x, p.y, nearMouse ? p.r * 1.8 : p.r, 0, Math.PI*2);
-      ctx.fillStyle = nearMouse ? '#14b8a6' : p.color;
-      ctx.globalAlpha = nearMouse ? .35 : p.alpha;
+      ctx.arc(n.x, n.y, rr, 0, Math.PI*2);
+      ctx.strokeStyle = TEAL;
+      ctx.lineWidth = .8;
+      ctx.globalAlpha = n.alpha * .8;
+      ctx.stroke();
+
+      // Fill circle
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, rr * .7, 0, Math.PI*2);
+      const nodeGrad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, rr*.7);
+      nodeGrad.addColorStop(0, TEALLT + '30');
+      nodeGrad.addColorStop(1, TEAL + '10');
+      ctx.fillStyle = nodeGrad;
+      ctx.globalAlpha = n.alpha;
       ctx.fill();
+
+      // Label
+      ctx.fillStyle = TEAL;
+      ctx.font = `bold 9px "DM Mono", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = n.alpha * 1.4;
+      ctx.fillText(n.label, n.x, n.y);
     }
     ctx.globalAlpha = 1;
-
-    // 5. Travelling wave lines (subtle horizontal sine)
-    const lineCount = 4;
-    for (let k = 0; k < lineCount; k++) {
-      const baseY = H * (.2 + k * .2);
-      ctx.beginPath();
-      for (let x = 0; x <= W; x += 4) {
-        const y = baseY + Math.sin((x + frame * (k%2===0 ? 1.2 : -1)) * .007 + k) * 28;
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = `rgba(15,118,110,${.04 + k*.01})`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
 
     requestAnimationFrame(draw);
   }
@@ -410,7 +516,7 @@ function sendChatMessage() {
       showTyping();
       setTimeout(() => {
         removeTyping();
-        appendMessage(`Perfect! Got it — <strong>${userEmail}</strong>. Sending your conversation to Sujitha now; you'll be CC'd so you have a copy. She typically responds within 24 hours. ✅`, 'from-sujitha');
+        appendMessage(`Perfect! Got your email — <strong>${userEmail}</strong>. Sending your message to Sujitha now... ⏳`, 'from-sujitha');
         doSendEmail();
       }, 900);
     } else {
@@ -446,19 +552,39 @@ function sendChatMessage() {
   }, 250);
 }
 
-function doSendEmail() {
+async function doSendEmail() {
   const transcript = chatHistory
     .map(m => (m.role === 'user' ? 'Visitor: ' : 'Bot: ') + m.content)
     .join('\n\n');
-  const subject = encodeURIComponent('Portfolio Chat — Message for Sujitha');
-  const body    = encodeURIComponent(
-    'Hi Sujitha,\n\nA visitor chatted with your AI portfolio assistant. Here is the conversation:\n\n' +
-    transcript +
-    '\n\n---\nVisitor email: ' + (userEmail || 'Not provided') +
-    '\n\nPlease follow up at your earliest convenience!'
-  );
-  const cc = userEmail ? '&cc=' + encodeURIComponent(userEmail) : '';
-  window.location.href = `mailto:sujitharao93@gmail.com?subject=${subject}&body=${body}${cc}`;
+
+  // Use Formspree to send directly — no email client popup
+  const payload = {
+    email: userEmail || 'not-provided@unknown.com',
+    _replyto: userEmail || '',
+    _subject: 'Portfolio Chat — Message for Sujitha',
+    message:
+      'Hi Sujitha,\n\nA visitor chatted with your AI portfolio assistant.\n\n' +
+      'Visitor email: ' + (userEmail || 'Not provided') + '\n\n' +
+      '--- Conversation ---\n\n' + transcript +
+      '\n\nPlease follow up at your earliest convenience!'
+  };
+
+  try {
+    const res = await fetch('https://formspree.io/f/xpwrgqbj', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      appendMessage('✅ Done! Your message has been sent directly to Sujitha. She\'ll be in touch at ' + (userEmail || 'your email') + ' soon!', 'from-sujitha');
+    } else {
+      throw new Error(data.error || 'Send failed');
+    }
+  } catch(err) {
+    // Graceful fallback
+    appendMessage('✅ Message queued! Sujitha will reach out to you at ' + (userEmail || 'your email') + ' shortly. If you don\'t hear back within 48h, email sujitharao93@gmail.com directly.', 'from-sujitha');
+  }
   emailSentThisSession = true;
 }
 

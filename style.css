@@ -217,14 +217,14 @@ h1.hero-name em{font-style:italic;color:var(--teal);display:inline;}
    SECTIONS
 ═══════════════════════════════════════════ */
 section{padding:5.5rem 3rem;position:relative;z-index:1;}
-#about{background:rgba(243,241,236,0.88);backdrop-filter:blur(8px);}
-#experience{background:rgba(250,249,246,0.88);backdrop-filter:blur(8px);}
-#skills{background:rgba(240,253,249,0.84);backdrop-filter:blur(8px);}
-#projects{background:rgba(250,249,246,0.88);backdrop-filter:blur(8px);}
-#education{background:rgba(243,241,236,0.86);backdrop-filter:blur(8px);}
-#resume{background:rgba(250,249,246,0.88);backdrop-filter:blur(8px);}
-#wall-of-love{background:rgba(243,241,236,0.86);backdrop-filter:blur(8px);}
-#contact-section{background:rgba(240,249,255,0.84);backdrop-filter:blur(8px);}
+#about{background:rgba(243,241,236,0.82);backdrop-filter:blur(6px);}
+#experience{background:rgba(250,249,246,0.80);backdrop-filter:blur(6px);}
+#skills{background:rgba(240,253,249,0.78);backdrop-filter:blur(6px);}
+#projects{background:rgba(250,249,246,0.80);backdrop-filter:blur(6px);}
+#education{background:rgba(243,241,236,0.80);backdrop-filter:blur(6px);}
+#resume{background:rgba(250,249,246,0.80);backdrop-filter:blur(6px);}
+#wall-of-love{background:rgba(243,241,236,0.78);backdrop-filter:blur(6px);}
+#contact-section{background:rgba(240,249,255,0.78);backdrop-filter:blur(6px);}
 
 .section-header{display:flex;align-items:center;gap:1.5rem;margin-bottom:3.5rem;}
 .section-num{font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.15em;}
@@ -246,7 +246,7 @@ section{padding:5.5rem 3rem;position:relative;z-index:1;}
 /* ═══════════════════════════════════════════
    STATS BAND
 ═══════════════════════════════════════════ */
-.stats-band{background:linear-gradient(135deg,var(--teal-dark),var(--teal),var(--teal-mid));padding:3rem;position:relative;overflow:hidden;z-index:1;}
+.stats-band{background:linear-gradient(135deg,rgba(10,92,86,0.92),rgba(15,118,110,0.92),rgba(20,184,166,0.88));padding:3rem;position:relative;overflow:hidden;z-index:1;}
 .stats-band::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Crect x='30' y='0' width='2' height='60'/%3E%3Crect x='0' y='30' width='60' height='2'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1.5rem;position:relative;}
 .stat-card{text-align:center;padding:1.2rem .8rem;border-radius:8px;background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.13);transition:background .2s,transform .2s;}
@@ -363,7 +363,7 @@ section{padding:5.5rem 3rem;position:relative;z-index:1;}
 .testimonial-card{background:rgba(250,249,246,0.95);border:1px solid var(--border-md);border-radius:6px;padding:1.5rem;position:relative;transition:transform .2s,box-shadow .2s;backdrop-filter:blur(4px);}
 .testimonial-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(15,118,110,0.12);}
 .testimonial-card::before{content:'\201C';position:absolute;top:.5rem;right:1rem;font-family:var(--serif);font-size:4rem;color:var(--teal-dim);line-height:1;}
-.testimonial-text{font-size:.93rem;color:var(--ink-mid);line-height:1.8;font-weight:300;margin-bottom:1.2rem;font-style:italic;}
+.testimonial-text{font-size:.93rem;color:var(--ink-mid);line-height:1.75;font-weight:300;margin-bottom:1.2rem;}
 .testimonial-author{display:flex;align-items:center;gap:.8rem;}
 .testimonial-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal-mid));display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.9rem;color:#fff;font-weight:600;flex-shrink:0;}
 .testimonial-name{font-size:13px;font-weight:600;color:var(--ink);}
@@ -457,6 +457,8 @@ footer span{color:var(--teal);}
    RESPONSIVE
 ═══════════════════════════════════════════ */
 @media(max-width:960px){
+  h1.hero-name{white-space:normal;font-size:clamp(1.8rem,7vw,3.5rem);}
+  
   nav{padding:1rem 1.5rem;}.nav-links{display:none;}
   #hero{grid-template-columns:1fr;padding:6rem 1.5rem 3rem;}
   .hero-right{min-height:480px;}
