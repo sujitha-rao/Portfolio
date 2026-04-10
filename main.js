@@ -278,29 +278,65 @@ setTimeout(hideLoader, 3500);
 
 
 // ═══════════════════════════════════════════
-// CURSOR
+// CURSOR — always visible, re-initialises on re-entry
 // ═══════════════════════════════════════════
-const cur = document.getElementById('cursor'), ring = document.getElementById('cursorRing');
-let mx = window.innerWidth/2, my = window.innerHeight/2, rx = mx, ry = my;
-// Show cursor at center initially
-cur.style.left = mx + 'px'; cur.style.top = my + 'px';
-ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+const cur  = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx = -200, my = -200, rx = -200, ry = -200;
 
-document.addEventListener('mousemove', e => {
-  mx = e.clientX; my = e.clientY;
-  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+// Keep cursor positioned correctly at all times
+function updateCursorPos(x, y) {
+  mx = x; my = y;
+  cur.style.left  = x + 'px';
+  cur.style.top   = y + 'px';
+}
+
+document.addEventListener('mousemove', e => updateCursorPos(e.clientX, e.clientY));
+
+// Re-enter from outside browser window — mouseover on document catches it
+document.addEventListener('mouseenter', e => updateCursorPos(e.clientX, e.clientY));
+
+// Ensure cursor is visible when mouse re-enters any section or the page
+document.addEventListener('mouseover', e => {
+  cur.style.opacity  = '1';
+  ring.style.opacity = '1';
 });
-(function anim() {
-  rx += (mx - rx) * 0.13; ry += (my - ry) * 0.13;
-  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-  requestAnimationFrame(anim);
+
+// Smooth ring animation
+(function animRing() {
+  rx += (mx - rx) * 0.14;
+  ry += (my - ry) * 0.14;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(animRing);
 })();
+
 document.addEventListener('mousedown', () => document.body.classList.add('clicking'));
-document.addEventListener('mouseup', () => document.body.classList.remove('clicking'));
-document.querySelectorAll('a,button,.skill-pill,.cert-badge,.edu-card,.project-card,.postit,.stat-card,.social-chip,.chat-quick,.testimonial-card').forEach(el => {
-  el.addEventListener('mouseenter', () => { cur.classList.add('hover'); ring.classList.add('hover'); });
-  el.addEventListener('mouseleave', () => { cur.classList.remove('hover'); ring.classList.remove('hover'); });
-});
+document.addEventListener('mouseup',   () => document.body.classList.remove('clicking'));
+
+// Hover expand: attach once to all interactive elements
+function attachCursorHovers() {
+  document.querySelectorAll(
+    'a, button, .skill-pill, .cert-badge, .edu-card, .project-card, ' +
+    '.postit, .stat-card, .social-chip, .chat-quick, .testimonial-card, ' +
+    '[onclick], input, textarea, select'
+  ).forEach(el => {
+    if (el.dataset.cursorBound) return;
+    el.dataset.cursorBound = '1';
+    el.addEventListener('mouseenter', () => {
+      cur.classList.add('hover');
+      ring.classList.add('hover');
+    });
+    el.addEventListener('mouseleave', () => {
+      cur.classList.remove('hover');
+      ring.classList.remove('hover');
+    });
+  });
+}
+attachCursorHovers();
+// Re-bind after dynamic content (testimonials added, etc.)
+setInterval(attachCursorHovers, 2000);
+
 
 // ═══════════════════════════════════════════
 // NAV
