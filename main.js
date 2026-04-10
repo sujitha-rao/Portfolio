@@ -19,84 +19,157 @@ window.addEventListener('load', () => setTimeout(hideLoader, 1800));
 setTimeout(hideLoader, 3500);
 
 // ═══════════════════════════════════════════
-// MOVING BACKGROUND CANVAS
+// MOVING BACKGROUND — Geometric particle mesh
 // ═══════════════════════════════════════════
 (function() {
   const canvas = document.getElementById('bg-canvas');
-  const ctx = canvas.getContext('2d');
-  let W, H, particles = [], animFrame;
+  const ctx    = canvas.getContext('2d');
+  let W, H, mouse = { x: -999, y: -999 };
 
   function resize() {
-    W = canvas.width = window.innerWidth;
+    W = canvas.width  = window.innerWidth;
     H = canvas.height = window.innerHeight;
   }
   resize();
   window.addEventListener('resize', resize);
+  document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
-  function Particle() {
-    this.reset();
-  }
-  Particle.prototype.reset = function() {
-    this.x = Math.random() * W;
-    this.y = Math.random() * H;
-    this.r = 1 + Math.random() * 2.5;
-    this.vx = (Math.random() - 0.5) * 0.35;
-    this.vy = (Math.random() - 0.5) * 0.35;
-    this.alpha = 0.04 + Math.random() * 0.1;
-    this.color = Math.random() > 0.5 ? '#0f766e' : '#14b8a6';
-  };
-  Particle.prototype.update = function() {
-    this.x += this.vx;
-    this.y += this.vy;
-    if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
-  };
+  // ── Floating hex/circle shapes (large decorative) ──────────────
+  const blobs = Array.from({length: 6}, (_, i) => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    r: 120 + Math.random() * 160,
+    vx: (Math.random() - .5) * .4,
+    vy: (Math.random() - .5) * .4,
+    hue: i < 3 ? '#0f766e' : i < 5 ? '#14b8a6' : '#ccfbf1',
+    alpha: 0.04 + Math.random() * 0.04,
+  }));
 
-  for (let i = 0; i < 80; i++) particles.push(new Particle());
+  // ── Small particles ─────────────────────────────────────────────
+  const particles = Array.from({length: 90}, () => ({
+    x: Math.random() * (typeof W !== 'undefined' ? W : 1200),
+    y: Math.random() * (typeof H !== 'undefined' ? H : 800),
+    r: .8 + Math.random() * 2.2,
+    vx: (Math.random() - .5) * .5,
+    vy: (Math.random() - .5) * .5,
+    alpha: .08 + Math.random() * .18,
+    color: Math.random() > .4 ? '#0f766e' : Math.random() > .5 ? '#14b8a6' : '#0a5c56',
+  }));
 
-  let mx = W / 2, my = H / 2;
-  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  // ── Grid dots (static teal grid) ────────────────────────────────
+  const GRID = 80;
+
+  let frame = 0;
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
+    frame++;
 
-    // Draw connections
+    // 1. Soft gradient background wash
+    const grad = ctx.createRadialGradient(W*.35, H*.4, 0, W*.35, H*.4, Math.max(W,H)*.8);
+    grad.addColorStop(0,   'rgba(15,118,110,0.07)');
+    grad.addColorStop(.5,  'rgba(20,184,166,0.03)');
+    grad.addColorStop(1,   'rgba(204,251,241,0.02)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // 2. Grid dot pattern
+    ctx.fillStyle = 'rgba(15,118,110,0.09)';
+    for (let gx = GRID/2; gx < W; gx += GRID) {
+      for (let gy = GRID/2; gy < H; gy += GRID) {
+        const pulse = Math.sin(frame*.015 + gx*.01 + gy*.008) * .5 + .5;
+        ctx.globalAlpha = 0.04 + pulse * 0.06;
+        ctx.beginPath();
+        ctx.arc(gx, gy, 1.5, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // 3. Large decorative floating circles
+    for (const b of blobs) {
+      b.x += b.vx; b.y += b.vy;
+      if (b.x < -b.r) b.x = W + b.r;
+      if (b.x > W+b.r) b.x = -b.r;
+      if (b.y < -b.r) b.y = H + b.r;
+      if (b.y > H+b.r) b.y = -b.r;
+      const bg = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+      bg.addColorStop(0, b.hue + 'CC');
+      bg.addColorStop(.6, b.hue + '44');
+      bg.addColorStop(1, b.hue + '00');
+      ctx.globalAlpha = b.alpha;
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // 4. Particle network with mouse interaction
     for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
+      const p = particles[i];
+
+      // Mouse attraction (gentle)
+      const mdx = mouse.x - p.x, mdy = mouse.y - p.y;
+      const md  = Math.sqrt(mdx*mdx + mdy*mdy);
+      if (md < 180) {
+        p.vx += mdx * .00012;
+        p.vy += mdy * .00012;
+      }
+      // Speed cap
+      const spd = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+      if (spd > .9) { p.vx *= .92; p.vy *= .92; }
+
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) { p.x = 0; p.vx *= -1; }
+      if (p.x > W) { p.x = W; p.vx *= -1; }
+      if (p.y < 0) { p.y = 0; p.vy *= -1; }
+      if (p.y > H) { p.y = H; p.vy *= -1; }
+
+      // Connect nearby particles
+      for (let j = i+1; j < particles.length; j++) {
+        const q   = particles[j];
+        const dx  = p.x - q.x, dy = p.y - q.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 110) {
           ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(15,118,110,${0.04 * (1 - dist / 120)})`;
-          ctx.lineWidth = 0.6;
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = `rgba(15,118,110,${0.12 * (1 - dist/110)})`;
+          ctx.lineWidth = .8;
           ctx.stroke();
         }
       }
-      // Mouse attraction
-      const dx = mx - particles[i].x;
-      const dy = my - particles[i].y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 160) {
-        particles[i].vx += dx * 0.00015;
-        particles[i].vy += dy * 0.00015;
-      }
 
-      // Draw dot
+      // Draw dot with subtle glow on particles near cursor
+      const nearMouse = md < 80;
       ctx.beginPath();
-      ctx.arc(particles[i].x, particles[i].y, particles[i].r, 0, Math.PI * 2);
-      ctx.fillStyle = particles[i].color;
-      ctx.globalAlpha = particles[i].alpha;
+      ctx.arc(p.x, p.y, nearMouse ? p.r * 1.8 : p.r, 0, Math.PI*2);
+      ctx.fillStyle = nearMouse ? '#14b8a6' : p.color;
+      ctx.globalAlpha = nearMouse ? .35 : p.alpha;
       ctx.fill();
-      ctx.globalAlpha = 1;
-      particles[i].update();
+    }
+    ctx.globalAlpha = 1;
+
+    // 5. Travelling wave lines (subtle horizontal sine)
+    const lineCount = 4;
+    for (let k = 0; k < lineCount; k++) {
+      const baseY = H * (.2 + k * .2);
+      ctx.beginPath();
+      for (let x = 0; x <= W; x += 4) {
+        const y = baseY + Math.sin((x + frame * (k%2===0 ? 1.2 : -1)) * .007 + k) * 28;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = `rgba(15,118,110,${.04 + k*.01})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
 
-    animFrame = requestAnimationFrame(draw);
+    requestAnimationFrame(draw);
   }
   draw();
 })();
+
 
 // ═══════════════════════════════════════════
 // CURSOR
