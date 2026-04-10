@@ -51,7 +51,7 @@ setTimeout(hideLoader, 3500);
       vx: (Math.random() - .5) * .35,
       vy: (Math.random() - .5) * .35,
       label: NODE_LABELS[i % NODE_LABELS.length],
-      alpha: .12 + Math.random() * .12,
+      alpha: .22 + Math.random() * .18,
       pulse: Math.random() * Math.PI * 2,
     }));
   }
@@ -69,7 +69,7 @@ setTimeout(hideLoader, 3500);
         y2: y1 + Math.sin(ang)*len,
         progress: Math.random(),
         speed: .003 + Math.random() * .005,
-        alpha: .08 + Math.random() * .1,
+        alpha: .18 + Math.random() * .15,
       };
     });
   }
@@ -84,7 +84,7 @@ setTimeout(hideLoader, 3500);
       y: -Math.random() * H,
       speed: .3 + Math.random() * .5,
       chars: '01·×+SAP AWS Java K8s',
-      alpha: .06 + Math.random() * .07,
+      alpha: .14 + Math.random() * .12,
     }));
   }
 
@@ -99,7 +99,7 @@ setTimeout(hideLoader, 3500);
       vy: (Math.random()-.5) * .18,
       angle: Math.random() * Math.PI,
       va: (Math.random()-.5) * .005,
-      alpha: .05 + Math.random() * .07,
+      alpha: .12 + Math.random() * .13,
     }));
   }
 
@@ -135,7 +135,7 @@ setTimeout(hideLoader, 3500);
     ctx.fillStyle = TEAL;
     for (const d of drops) {
       const chars = d.chars.split('');
-      ctx.globalAlpha = d.alpha;
+      ctx.globalAlpha = d.alpha * 2.5;
       const ch = chars[Math.floor(frame*.1 + d.y * .05) % chars.length];
       ctx.fillText(ch, d.x, d.y);
       d.y += d.speed;
@@ -184,14 +184,14 @@ setTimeout(hideLoader, 3500);
       ctx.beginPath();
       ctx.arc(px, py, 2.5, 0, Math.PI*2);
       ctx.fillStyle = TEAL2;
-      ctx.globalAlpha = t.alpha * 2;
+      ctx.globalAlpha = Math.min(1, t.alpha * 3.5);
       ctx.fill();
 
       // Corner joints
       ctx.beginPath();
       ctx.arc(t.x1, t.y1, 3, 0, Math.PI*2);
       ctx.fillStyle = TEAL;
-      ctx.globalAlpha = t.alpha;
+      ctx.globalAlpha = t.alpha * 2;
       ctx.fill();
       ctx.beginPath();
       ctx.arc(t.x2, t.y2, 3, 0, Math.PI*2);
@@ -213,7 +213,7 @@ setTimeout(hideLoader, 3500);
           ctx.lineTo(b.x, b.y);
           ctx.strokeStyle = TEAL;
           ctx.lineWidth = .7;
-          ctx.globalAlpha = .09 * (1 - dist/CONNECTION_DIST);
+          ctx.globalAlpha = .2 * (1 - dist/CONNECTION_DIST);
           ctx.stroke();
         }
       }
@@ -264,7 +264,7 @@ setTimeout(hideLoader, 3500);
       ctx.font = `bold 9px "DM Mono", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.globalAlpha = n.alpha * 1.4;
+      ctx.globalAlpha = Math.min(1, n.alpha * 2.2);
       ctx.fillText(n.label, n.x, n.y);
     }
     ctx.globalAlpha = 1;
@@ -284,8 +284,17 @@ const cur  = document.getElementById('cursor');
 const ring = document.getElementById('cursorRing');
 let mx = -200, my = -200, rx = -200, ry = -200;
 
+// Detect touch device — disable custom cursor
+const isTouchDevice = () => window.matchMedia('(hover:none) and (pointer:coarse)').matches;
+if (isTouchDevice()) {
+  if (cur)  cur.style.display  = 'none';
+  if (ring) ring.style.display = 'none';
+  document.body.style.cursor = 'auto';
+}
+
 // Keep cursor positioned correctly at all times
 function updateCursorPos(x, y) {
+  if (isTouchDevice()) return;
   mx = x; my = y;
   cur.style.left  = x + 'px';
   cur.style.top   = y + 'px';

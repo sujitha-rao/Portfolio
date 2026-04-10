@@ -13,7 +13,7 @@
   --hand:'Caveat',cursive;
 }
 html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.7;overflow-x:hidden;cursor:none;}
+body{background:#f5f4f0;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.7;overflow-x:hidden;cursor:none;}
 ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--teal);border-radius:2px;}
 
 /* ═══════════════════════════════════════════
@@ -217,14 +217,14 @@ h1.hero-name em{font-style:italic;color:var(--teal);display:inline;}
    SECTIONS
 ═══════════════════════════════════════════ */
 section{padding:3.5rem 3rem;position:relative;z-index:1;}
-#about{background:rgba(243,241,236,0.82);backdrop-filter:blur(6px);}
-#experience{background:rgba(250,249,246,0.80);backdrop-filter:blur(6px);}
-#skills{background:rgba(240,253,249,0.78);backdrop-filter:blur(6px);}
-#projects{background:rgba(250,249,246,0.80);backdrop-filter:blur(6px);}
-#education{background:rgba(243,241,236,0.80);backdrop-filter:blur(6px);}
-#resume{background:rgba(250,249,246,0.80);backdrop-filter:blur(6px);}
-#wall-of-love{background:rgba(243,241,236,0.78);backdrop-filter:blur(6px);}
-#contact-section{background:rgba(240,249,255,0.78);backdrop-filter:blur(6px);}
+#about{background:rgba(243,241,236,0.72);}
+#experience{background:rgba(250,249,246,0.70);}
+#skills{background:rgba(240,253,249,0.68);}
+#projects{background:rgba(250,249,246,0.70);}
+#education{background:rgba(243,241,236,0.70);}
+#resume{background:rgba(250,249,246,0.70);}
+#wall-of-love{background:rgba(243,241,236,0.68);}
+#contact-section{background:rgba(240,249,255,0.68);}
 
 .section-header{display:flex;align-items:center;gap:1.5rem;margin-bottom:2rem;}
 .section-num{font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.15em;}
@@ -456,23 +456,80 @@ footer span{color:var(--teal);}
 /* ═══════════════════════════════════════════
    RESPONSIVE
 ═══════════════════════════════════════════ */
+/* ═══ TABLET (≤960px) ═══ */
 @media(max-width:960px){
   h1.hero-name{white-space:normal;font-size:clamp(1.8rem,7vw,3.5rem);}
-  
-  nav{padding:1rem 1.5rem;}.nav-links{display:none;}
-  #hero{grid-template-columns:1fr;padding:6rem 1.5rem 3rem;}
-  .hero-right{min-height:480px;}
-  .avatar-stage{height:480px;}
+  nav{padding:1rem 1.5rem;}
+  .nav-links{display:none;}
+  #hero{grid-template-columns:1fr;padding:5.5rem 1.5rem 2rem;gap:2rem;}
+  .hero-right{min-height:auto;}
+  .avatar-stage{flex-wrap:wrap;justify-content:center;gap:.8rem;}
+  .postit-col{flex:0 0 auto;gap:.7rem;}
+  .postit-col-left{order:1;}
+  .photo-wrap{order:2;}
+  .postit-col-right{order:3;}
   .photo-border{width:180px;height:180px;}
-  .pi-1{left:0;top:10px;font-size:13px;}.pi-2{right:0;top:10px;}
-  .pi-3{left:-5px;}.pi-4{right:-5px;}
-  .pi-5{left:0;bottom:20px;}.pi-6{right:0;bottom:20px;}
   section{padding:2.5rem 1.5rem;}
   .about-grid,.edu-grid{grid-template-columns:1fr;gap:2rem;}
+  .skills-grid{grid-template-columns:1fr 1fr;}
+  .projects-grid{grid-template-columns:1fr;}
+  .testimonials-grid{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:repeat(4,1fr);}
   footer{flex-direction:column;text-align:center;}
-  .chatbox{right:1rem;width:calc(100vw - 2rem);}
-  .chatbox-trigger{right:1rem;}
+  .chatbox{right:.75rem;width:calc(100vw - 1.5rem);}
+  .chatbox-trigger{right:.75rem;bottom:1.5rem;}
   .testimonial-form{grid-template-columns:1fr;}
+  .social-row{flex-wrap:wrap;}
+  .hero-desc{font-size:.9rem;}
+}
+
+/* ═══ MOBILE (≤600px) ═══ */
+@media(max-width:600px){
+  h1.hero-name{font-size:clamp(1.6rem,8.5vw,2.8rem);white-space:normal;}
+  nav{padding:.9rem 1rem;}
+  #hero{padding:5rem 1rem 2rem;gap:1.5rem;}
+  .avatar-stage{flex-direction:column;align-items:center;gap:1.2rem;}
+  .postit-col{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:.6rem;width:100%;}
+  .postit{width:145px;}
+  .photo-border{width:160px;height:160px;}
+  .photo-hint{font-size:9px;bottom:-32px;}
+  section{padding:2rem 1rem;}
+  .section-title{font-size:clamp(1.4rem,5vw,2rem);}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:1rem;}
+  .stat-big{font-size:1.8rem;}
+  .skills-grid{grid-template-columns:1fr;}
+  .projects-grid{grid-template-columns:1fr;}
+  .about-grid,.edu-grid{grid-template-columns:1fr;}
+  .testimonials-grid{grid-template-columns:1fr;}
+  .hero-ctas{flex-direction:column;gap:.7rem;}
+  .btn-primary,.btn-outline{justify-content:center;text-align:center;}
+  .social-row{gap:.4rem;}
+  .social-chip{font-size:10px;padding:.28rem .65rem;}
+  .exp-header{flex-direction:column;gap:.3rem;}
+  .exp-period{align-self:flex-start;}
+  .project-card{width:100%;}
+  .chatbox{right:.5rem;width:calc(100vw - 1rem);bottom:5rem;}
+  .chatbox-trigger{right:.75rem;bottom:1rem;}
+  footer{padding:1.2rem 1rem;gap:.6rem;}
+  .stats-band{padding:1.5rem 1rem;}
+  .wol-intro{font-size:.88rem;}
+  .testimonial-text{font-size:.88rem;}
+  .add-testimonial-title{font-size:1.2rem;}
+  .testimonial-form{grid-template-columns:1fr;}
+  .hero-right{width:100%;overflow-x:hidden;}
+  .resume-container{width:100%;}
+}
+
+/* ═══ SMALL MOBILE (≤400px) ═══ */
+@media(max-width:400px){
+  h1.hero-name{font-size:clamp(1.4rem,9vw,2.2rem);}
+  .postit{width:130px;}
+  .postit-col{gap:.45rem;}
+  .photo-border{width:140px;height:140px;}
+  .social-chip{font-size:9px;padding:.25rem .55rem;}
+  section{padding:1.5rem .75rem;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  nav{padding:.8rem .75rem;}
 }
 
 /* ── AI Chat email-collection step ── */
@@ -487,3 +544,10 @@ footer span{color:var(--teal);}
 .chat-email-step input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,118,110,0.1);}
 .chat-email-step button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:.4rem .9rem;font-family:var(--mono);font-size:11px;cursor:pointer;align-self:flex-start;letter-spacing:.05em;text-transform:uppercase;}
 .chat-email-step button:hover{background:var(--teal-dark);}
+
+/* Touch devices: restore default cursor */
+@media(hover:none) and (pointer:coarse){
+  body{cursor:auto!important;}
+  .cursor,.cursor-ring{display:none!important;}
+  a,button,[onclick]{cursor:pointer!important;}
+}
