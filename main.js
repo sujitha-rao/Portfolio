@@ -441,6 +441,13 @@ function spawnStars(el) {
 }
 
 function revealNextPostit() {
+  // On touch devices, clicking the photo scrolls to next section
+  if (window.matchMedia('(hover:none) and (pointer:coarse)').matches) {
+    const about = document.getElementById('about');
+    if (about) about.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+  
   if (piIdx >= totalPi) return;
   const pi = document.getElementById('pi' + piOrder[piIdx]);
   if (pi) {
@@ -687,3 +694,51 @@ ${msg}`);
   document.getElementById('testimonialForm').reset();
   setTimeout(() => document.getElementById('testimonialSuccess').classList.remove('show'), 6000);
 }
+
+// ═══════════════════════════════════════════
+// MOBILE POST-IT CAROUSEL
+// ═══════════════════════════════════════════
+function initMobileCarousel() {
+  const track = document.getElementById('mpiTrack');
+  const dotsEl = document.getElementById('mpiDots');
+  if (!track || !dotsEl) return;
+
+  const cards = track.querySelectorAll('.mpi-card');
+  if (!cards.length) return;
+
+  // Build dots
+  dotsEl.innerHTML = '';
+  cards.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'mpi-dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => { cards[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); };
+    dotsEl.appendChild(d);
+  });
+
+  // Update active dot on scroll
+  const dots = dotsEl.querySelectorAll('.mpi-dot');
+  let ticking = false;
+  track.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const mid = track.scrollLeft + track.offsetWidth / 2;
+      let closest = 0, minDist = Infinity;
+      cards.forEach((card, i) => {
+        const cMid = card.offsetLeft + card.offsetWidth / 2;
+        const dist = Math.abs(mid - cMid);
+        if (dist < minDist) { minDist = dist; closest = i; }
+      });
+      dots.forEach((d, i) => d.classList.toggle('active', i === closest));
+      ticking = false;
+    });
+  }, { passive: true });
+}
+
+function mpiFlip(card) {
+  card.classList.toggle('flipped');
+}
+
+// Init on load
+window.addEventListener('load', initMobileCarousel);
+

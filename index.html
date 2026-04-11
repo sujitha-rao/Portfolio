@@ -47,7 +47,7 @@
     <div class="hero-eyebrow">Based in Atlanta, Georgia</div>
     <h1 class="hero-name">Sujitha <em>Suresh Rao</em></h1>
     <div class="hero-roles"><span id="typed-text"></span><span class="cursor-blink"></span></div>
-    <p class="hero-desc">9+ years delivering production-grade Java &amp; cloud-native systems across SAP ecosystems. SAP BTP Certified Architect &middot; AWS &amp; Kubernetes practitioner &middot; Georgia Tech MS student (part-time). Fully available for senior full-time roles.</p>
+    <p class="hero-desc">9+ years delivering production-grade Java &amp; cloud-native systems across SAP ecosystems. SAP BTP Certified Architect &middot; AWS &amp; Kubernetes practitioner &middot; Georgia Tech MS student (part-time). Open to conversations, connections, and new opportunities.</p>
     <div class="hero-ctas">
       <a href="#" class="btn-primary" onclick="event.preventDefault();toggleChat();"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Get in Touch</a>
       <a href="#projects" class="btn-outline"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 22 22 7 12 2"/></svg>View Projects</a>
@@ -65,7 +65,7 @@
     <div class="avatar-stage">
 
       <!-- LEFT COLUMN: post-its 0,1,2 -->
-      <div class="postit-col postit-col-left">
+      <div class="postit-col postit-col-left desktop-only-pi">
         <div class="postit pi-peach" id="pi0">
           <div class="postit-inner">
             <div class="postit-face">
@@ -127,7 +127,7 @@
       </div>
 
       <!-- RIGHT COLUMN: post-its 3,4,5 -->
-      <div class="postit-col postit-col-right">
+      <div class="postit-col postit-col-right desktop-only-pi">
         <div class="postit pi-lavender" id="pi3">
           <div class="postit-inner">
             <div class="postit-face">
@@ -178,6 +178,78 @@
     </div><!-- /avatar-stage -->
     <div class="photo-shadow"></div>
   </div>
+      <!-- MOBILE: Post-it carousel (hidden on desktop) -->
+      <div id="mobile-pi-carousel" class="mobile-only-pi">
+        <div class="mpi-track" id="mpiTrack">
+          <div class="mpi-card mpi-peach" data-idx="0" onclick="mpiFlip(this)">
+            <div class="mpi-front">
+              <div class="mpi-title">Enterprise Impact</div>
+              <div class="mpi-body">9+ years leading architecture across SAP Concur, SuccessFactors &amp; S/4HANA with 99.9% uptime SLAs.</div>
+              <div class="mpi-tap">Tap to read more</div>
+            </div>
+            <div class="mpi-back">
+              <div class="mpi-title">&#128203; Enterprise Impact</div>
+              <div class="mpi-body">Led architecture across SAP Concur, SuccessFactors &amp; S/4HANA. Delivered systems serving millions globally. Achieved 40% reliability boost &amp; 2M+ records/hr pipeline throughput on AWS.</div>
+            </div>
+          </div>
+          <div class="mpi-card mpi-blue" data-idx="1" onclick="mpiFlip(this)">
+            <div class="mpi-front">
+              <div class="mpi-title">SAP BTP Certified</div>
+              <div class="mpi-body">Certified Solution Architect — expert in Cloud Foundry, Integration Suite &amp; API Management.</div>
+              <div class="mpi-tap">Tap to read more</div>
+            </div>
+            <div class="mpi-back">
+              <div class="mpi-title">&#127963; Architecture Expertise</div>
+              <div class="mpi-body">Certified SAP BTP Solution Architect (2026). Designed multi-tenant enterprise integrations at scale across event-driven and API-based architectures.</div>
+            </div>
+          </div>
+          <div class="mpi-card mpi-green" data-idx="2" onclick="mpiFlip(this)">
+            <div class="mpi-front">
+              <div class="mpi-title">Georgia Tech MS</div>
+              <div class="mpi-body">Pursuing part-time MS CS at OMSCS — balancing advanced academics &amp; full-time engineering.</div>
+              <div class="mpi-tap">Tap to read more</div>
+            </div>
+            <div class="mpi-back">
+              <div class="mpi-title">&#127979; Georgia Tech OMSCS</div>
+              <div class="mpi-body">Enrolled part-time since Jan 2026. Specialising in ML &amp; Cloud Computing. Demonstrates ability to balance rigorous academics with full-time work commitments.</div>
+            </div>
+          </div>
+          <div class="mpi-card mpi-lavender" data-idx="3" onclick="mpiFlip(this)">
+            <div class="mpi-front">
+              <div class="mpi-title">Cloud Scale</div>
+              <div class="mpi-body">2M+ records/hr pipeline with 40% reliability improvement on AWS Kafka + EKS at SAP Concur.</div>
+              <div class="mpi-tap">Tap to read more</div>
+            </div>
+            <div class="mpi-back">
+              <div class="mpi-title">&#9729; Pipeline Architecture</div>
+              <div class="mpi-body">Redesigned data pipeline with Kafka + EKS. Achieved 40% reliability improvement and 2M+ records/hour throughput. Helm IaC, zero-touch CI/CD deployments.</div>
+            </div>
+          </div>
+          <div class="mpi-card mpi-pink" data-idx="4" onclick="mpiFlip(this)">
+            <div class="mpi-front">
+              <div class="mpi-title">AI &amp; DevOps</div>
+              <div class="mpi-body">IBM AI Developer (2025), PagerDuty DevOps (2026), Gen AI for Software Dev (DeepLearning.AI).</div>
+              <div class="mpi-tap">Tap to read more</div>
+            </div>
+            <div class="mpi-back">
+              <div class="mpi-title">&#129302; Multi-domain Certs</div>
+              <div class="mpi-body">IBM AI Developer Professional (2025), PagerDuty DevOps (2026), and Gen AI for Software Development (DeepLearning.AI 2025) — staying at the forefront of tech.</div>
+            </div>
+          </div>
+          <div class="mpi-card mpi-peach" data-idx="5" onclick="mpiFlip(this)">
+            <div class="mpi-front">
+              <div class="mpi-title">Code Quality</div>
+              <div class="mpi-body">35% fewer production defects via JUnit, Mockito, SonarQube &amp; CodeQL automated testing.</div>
+              <div class="mpi-tap">Tap to read more</div>
+            </div>
+            <div class="mpi-back">
+              <div class="mpi-title">&#9989; Engineering Quality</div>
+              <div class="mpi-body">Championed automated testing culture at Unisys — JUnit, Mockito, SonarQube, CodeQL, Checkmarx. Reduced production defects by 35% and improved release confidence significantly.</div>
+            </div>
+          </div>
+        </div>
+        <div class="mpi-dots" id="mpiDots"></div>
+      </div>
   <div class="scroll-hint"><div class="scroll-line"></div><span>Scroll</span></div>
 </section>
 
