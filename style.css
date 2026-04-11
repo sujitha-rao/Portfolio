@@ -398,7 +398,7 @@ section{padding:3.5rem 3rem;position:relative;z-index:1;}
    CHATBOX — bottom right
 ═══════════════════════════════════════════ */
 .chatbox-trigger{
-  position:fixed;bottom:2rem;right:2rem;z-index:5000;
+  position:fixed;bottom:2rem;right:2rem;z-index:9990;
   width:56px;height:56px;border-radius:50%;
   background:var(--teal);color:#fff;
   border:none;cursor:pointer;
@@ -415,7 +415,7 @@ section{padding:3.5rem 3rem;position:relative;z-index:1;}
 @keyframes badge-appear{from{transform:scale(0);}to{transform:scale(1);}}
 
 .chatbox{
-  position:fixed;bottom:6rem;right:2rem;z-index:4999;
+  position:fixed;bottom:6rem;right:2rem;z-index:9989;
   width:320px;border-radius:16px;
   background:#fff;
   box-shadow:0 20px 60px rgba(0,0,0,0.18),0 4px 16px rgba(0,0,0,0.1);
@@ -601,8 +601,8 @@ footer span{color:var(--teal);}
   .cert-badge[href]{flex:0 0 100%;} /* stack contact cards */
 
   /* ── Chat ── */
-  .chatbox{right:.5rem;width:calc(100vw - 1rem);bottom:4.5rem;}
-  .chatbox-trigger{right:.75rem;bottom:.9rem;width:50px;height:50px;}
+  .chatbox{right:.5rem!important;width:calc(100vw - 1rem)!important;bottom:5rem!important;z-index:9989!important;max-height:80vh;}
+  .chatbox-trigger{right:1rem!important;bottom:1.2rem!important;width:52px!important;height:52px!important;z-index:9990!important;display:flex!important;}
   .chat-header{padding:1rem 1.1rem;}
   .chat-header-name{font-size:14px;}
   .chat-bubble{font-size:14px;}
@@ -612,11 +612,11 @@ footer span{color:var(--teal);}
   footer{padding:1.4rem 1.2rem;gap:.6rem;flex-direction:column;text-align:center;}
   footer p{font-size:12px;}
 
-  /* ── Mobile post-it carousel ── */
-  .mpi-card{flex:0 0 240px;height:168px;}
-  .mpi-title{font-size:13px;}
-  .mpi-body{font-size:12px;line-height:1.5;}
-  .mpi-tap{font-size:10px;}
+  /* ── Mobile post-it carousel (vertical) ── */
+  .mpi-card{width:100%;}
+  .mpi-title{font-size:14px;}
+  .mpi-body{font-size:13px;line-height:1.6;}
+  .mpi-tap{font-size:11px;}
 }
 
 /* ═══════════════════════════════════════════
@@ -631,7 +631,7 @@ footer span{color:var(--teal);}
   .stats-grid{grid-template-columns:repeat(2,1fr);}
   nav{padding:.8rem 1rem;}
   .social-chip{font-size:11px;}
-  .mpi-card{flex:0 0 220px;}
+  .mpi-card{width:100%;}
 }
 
 /* ── Touch devices: remove custom cursor ── */
@@ -687,35 +687,30 @@ footer span{color:var(--teal);}
    MOBILE POST-IT CAROUSEL
 ════════════════════════════════ */
 #mobile-pi-carousel{
-  width:100%;padding:.5rem 0 1rem;
+  width:100%;padding:.5rem 0 1.5rem;
 }
 .mpi-track{
   display:flex;
-  gap:1rem;
-  overflow-x:auto;
-  padding:.5rem 1rem 1rem;
-  scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
+  flex-direction:column;
+  gap:.9rem;
+  padding:.5rem .5rem 1rem;
 }
-.mpi-track::-webkit-scrollbar{display:none;}
 .mpi-card{
-  flex:0 0 220px;
-  height:160px;
+  width:100%;
+  min-height:auto;
   border-radius:4px;
-  scroll-snap-align:center;
   cursor:pointer;
   position:relative;
   perspective:700px;
   user-select:none;
 }
 .mpi-front,.mpi-back{
-  position:absolute;inset:0;
   border-radius:4px;
-  padding:1rem 1.1rem;
+  padding:1.1rem 1.2rem 1rem;
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
   transition:transform .45s cubic-bezier(.4,0,.2,1);
+  width:100%;
 }
 .mpi-front{
   background:#fef3c7;
@@ -726,6 +721,8 @@ footer span{color:var(--teal);}
   background:var(--teal-dark);color:#fff;
   transform:rotateY(180deg);
   box-shadow:2px 3px 10px rgba(0,0,0,0.18);
+  position:absolute;top:0;left:0;right:0;
+  min-height:100%;
 }
 .mpi-card.flipped .mpi-front{transform:rotateY(-180deg);}
 .mpi-card.flipped .mpi-back{transform:rotateY(0deg);}
@@ -743,14 +740,24 @@ footer span{color:var(--teal);}
 .mpi-back .mpi-title{color:rgba(255,255,255,.95);}
 .mpi-body{font-family:var(--sans);font-size:11px;line-height:1.55;color:var(--ink-mid);}
 .mpi-back .mpi-body{color:rgba(255,255,255,.82);}
-.mpi-tap{font-family:var(--mono);font-size:9px;color:var(--ink-soft);position:absolute;bottom:.6rem;right:.8rem;text-transform:uppercase;letter-spacing:.05em;}
-.mpi-dots{
-  display:flex;justify-content:center;gap:.45rem;
-  padding-top:.4rem;
-}
+.mpi-tap{font-family:var(--mono);font-size:10px;color:var(--ink-soft);display:block;margin-top:.6rem;text-transform:uppercase;letter-spacing:.05em;text-align:right;}
+.mpi-dots{display:none;}
 .mpi-dot{
   width:6px;height:6px;border-radius:50%;
   background:var(--border-md);
   transition:background .2s,transform .2s;
 }
 .mpi-dot.active{background:var(--teal);transform:scale(1.3);}
+
+/* Post-it section heading on mobile */
+#mobile-pi-carousel::before{
+  content:"My Highlights";
+  display:block;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--teal);
+  text-transform:uppercase;
+  letter-spacing:.15em;
+  padding:.5rem .5rem .2rem;
+  opacity:.8;
+}
