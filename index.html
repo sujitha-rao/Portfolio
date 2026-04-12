@@ -36,6 +36,7 @@
     <li><a href="#skills">Skills</a></li>
     <li><a href="#projects">Projects</a></li>
     <li><a href="#education">Education</a></li>
+    <li><a href="#stats-viewer">Stats</a></li>
     <li><a href="#contact-section">Contact</a></li>
     <li><a href="#resume" class="nav-resume-btn">Resume</a></li>
   </ul>
@@ -456,6 +457,65 @@
   </div>
 </section>
 
+
+<!-- PORTFOLIO STATS -->
+<section id="stats-viewer" style="background:rgba(15,118,110,0.97);position:relative;overflow:hidden;z-index:1;">
+  <!-- Decorative bg -->
+  <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,92,86,0.98),rgba(15,118,110,0.97),rgba(20,184,166,0.85));z-index:0;"></div>
+  <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;border:1px solid rgba(255,255,255,0.06);"></div>
+  <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,255,255,0.08);"></div>
+  <div style="position:absolute;bottom:-80px;left:-40px;width:350px;height:350px;border-radius:50%;border:1px solid rgba(255,255,255,0.05);"></div>
+
+  <div style="position:relative;z-index:1;padding:3.5rem 3rem;">
+    <div class="section-header reveal" style="margin-bottom:2.5rem;">
+      <span class="section-num" style="color:rgba(255,255,255,0.6);">09</span>
+      <h2 class="section-title" style="color:#fff;">Portfolio Analytics</h2>
+      <div class="section-line" style="background:rgba(255,255,255,0.15);"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin-bottom:2.5rem;" class="reveal">
+      <!-- Visit counter -->
+      <div class="sv-card">
+        <div class="sv-icon">&#128065;</div>
+        <div class="sv-num" id="sv-visits">—</div>
+        <div class="sv-label">Total Visits</div>
+        <div class="sv-bar"><div class="sv-bar-fill" id="sv-visits-bar"></div></div>
+      </div>
+      <!-- This session -->
+      <div class="sv-card">
+        <div class="sv-icon">&#9201;</div>
+        <div class="sv-num" id="sv-time">—</div>
+        <div class="sv-label">Time on Page</div>
+        <div class="sv-bar"><div class="sv-bar-fill" id="sv-time-bar"></div></div>
+      </div>
+      <!-- Sections viewed -->
+      <div class="sv-card">
+        <div class="sv-icon">&#128203;</div>
+        <div class="sv-num" id="sv-sections">—</div>
+        <div class="sv-label">Sections Explored</div>
+        <div class="sv-bar"><div class="sv-bar-fill" id="sv-sections-bar"></div></div>
+      </div>
+      <!-- Interactions -->
+      <div class="sv-card">
+        <div class="sv-icon">&#128084;</div>
+        <div class="sv-num" id="sv-clicks">—</div>
+        <div class="sv-label">Interactions</div>
+        <div class="sv-bar"><div class="sv-bar-fill" id="sv-clicks-bar"></div></div>
+      </div>
+    </div>
+
+    <!-- Section heat map -->
+    <div class="reveal">
+      <div style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem;">Section Engagement</div>
+      <div id="sv-heatmap" style="display:flex;flex-direction:column;gap:.6rem;"></div>
+    </div>
+
+    <!-- Last visit -->
+    <div class="reveal" style="margin-top:2rem;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.35);text-align:center;">
+      <span id="sv-last-visit">Tracking your current session</span>
+    </div>
+  </div>
+</section>
 <!-- CONTACT INFO SECTION (replaces old contact) -->
 <section id="contact-section">
   <div class="section-header reveal"><span class="section-num">08</span><h2 class="section-title">Connect</h2><div class="section-line"></div></div>

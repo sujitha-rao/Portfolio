@@ -653,10 +653,6 @@ footer span{color:var(--teal);}
 .chat-email-step input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,118,110,0.1);}
 .chat-email-step button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:.4rem .9rem;font-family:var(--mono);font-size:11px;cursor:pointer;align-self:flex-start;letter-spacing:.05em;text-transform:uppercase;}
 .chat-email-step button:hover{background:var(--teal-dark);}
-
-
-  .cursor,.cursor-ring{display:none!important;}
-  a,button,[onclick]{cursor:pointer!important;}
 }
 /* ════════════════════════════════
    DESKTOP POST-ITS / MOBILE HIDDEN
@@ -781,10 +777,44 @@ footer span{color:var(--teal);}
   .btn-outline:active{background:var(--teal-dim)!important;}
 }
 
-/* ═══════════════════════════════════════════
-   TOUCH DEVICES — no custom cursor whatsoever
-═══════════════════════════════════════════ */
-@media(hover:none),(pointer:coarse){
-  body,*{cursor:auto!important;}
+
   .cursor,.cursor-ring{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+}
+/* ═══════════════════════════════════════════
+   TOUCH / MOBILE — no custom cursor
+   Covers phones and tablets
+═══════════════════════════════════════════ */
+@media (hover: none), (pointer: coarse) {
+  body, * { cursor: auto !important; }
+  .cursor, .cursor-ring { display: none !important; }
+}
+/* ═══════════════════════════════════════════
+   PORTFOLIO STATS SECTION
+═══════════════════════════════════════════ */
+.sv-card{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:8px;
+  padding:1.4rem 1.2rem;
+  display:flex;flex-direction:column;align-items:flex-start;
+  gap:.3rem;
+  transition:background .2s,transform .2s;
+}
+.sv-card:hover{background:rgba(255,255,255,0.13);transform:translateY(-3px);}
+.sv-icon{font-size:1.6rem;margin-bottom:.2rem;}
+.sv-num{font-family:var(--serif);font-size:2.4rem;color:#fff;line-height:1;}
+.sv-label{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.12em;margin-top:.1rem;}
+.sv-bar{width:100%;height:3px;background:rgba(255,255,255,0.12);border-radius:2px;margin-top:.7rem;overflow:hidden;}
+.sv-bar-fill{height:100%;background:linear-gradient(90deg,#ccfbf1,#14b8a6);border-radius:2px;width:0%;transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+/* Heat map rows */
+.sv-heat-row{display:flex;align-items:center;gap:.8rem;}
+.sv-heat-label{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.65);width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sv-heat-track{flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;}
+.sv-heat-fill{height:100%;border-radius:3px;width:0%;transition:width 1.4s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,#14b8a6,#ccfbf1);}
+.sv-heat-pct{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.5);width:30px;text-align:right;flex-shrink:0;}
+@media(max-width:640px){
+  #stats-viewer .section-header{margin-bottom:1.5rem;}
+  #stats-viewer > div > div[style*="grid"]{grid-template-columns:1fr 1fr;}
+  .sv-num{font-size:2rem;}
+  #sv-heatmap .sv-heat-label{width:80px;font-size:10px;}
 }

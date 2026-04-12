@@ -692,6 +692,165 @@ ${msg}`);
 }
 
 // ═══════════════════════════════════════════
+// PORTFOLIO VIEWER STATISTICS
+// ═══════════════════════════════════════════
+(function() {
+  const STORAGE_KEY = 'ssr_portfolio_stats';
+  const SECTIONS = ['hero','about','experience','skills','projects','education','resume','wall-of-love','stats-viewer','contact-section'];
+  const LABELS   = ['Intro','About','Experience','Skills','Projects','Education','Resume','Wall of Love','Analytics','Connect'];
+
+  // Load or init persisted stats
+  let stored;
+  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { stored = {}; }
+
+  const stats = {
+    visits:      (stored.visits || 0) + 1,
+    totalClicks: stored.totalClicks || 0,
+    sectionViews:stored.sectionViews || {},
+    lastVisit:   stored.lastVisit || null,
+    sessionStart: Date.now(),
+  };
+
+  // Persist updated visit count immediately
+  stats.lastVisit = stored.lastVisit;
+  save();
+  stats.lastVisit = new Date().toISOString();
+  save();
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        visits:       stats.visits,
+        totalClicks:  stats.totalClicks,
+        sectionViews: stats.sectionViews,
+        lastVisit:    stats.lastVisit,
+      }));
+    } catch(e) {}
+  }
+
+  // Track clicks
+  document.addEventListener('click', () => {
+    stats.totalClicks++;
+    save();
+  });
+
+  // Track section views via IntersectionObserver
+  const sectionObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && e.intersectionRatio >= 0.3) {
+        const id = e.target.id;
+        stats.sectionViews[id] = (stats.sectionViews[id] || 0) + 1;
+        save();
+      }
+    });
+  }, { threshold: 0.3 });
+
+  SECTIONS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) sectionObs.observe(el);
+  });
+
+  // Animated counter helper
+  function countUp(el, target, suffix, duration) {
+    if (!el) return;
+    const start = Date.now();
+    const from = 0;
+    function tick() {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(from + (target - from) * ease) + (suffix || '');
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function animateBar(el, pct, delay) {
+    if (!el) return;
+    setTimeout(() => { el.style.width = Math.min(pct, 100) + '%'; }, delay || 0);
+  }
+
+  // Render stats once the section scrolls into view
+  const statsSection = document.getElementById('stats-viewer');
+  let rendered = false;
+
+  function renderStats() {
+    if (rendered) return;
+    rendered = true;
+
+    const sessionSec = Math.round((Date.now() - stats.sessionStart) / 1000);
+    const sessionMin = Math.floor(sessionSec / 60);
+    const sessionSecRem = sessionSec % 60;
+    const timeStr = sessionMin > 0 ? sessionMin + 'm ' + sessionSecRem + 's' : sessionSec + 's';
+
+    const sectionsViewed = Object.keys(stats.sectionViews).length;
+
+    // Animate counters
+    countUp(document.getElementById('sv-visits'),   stats.visits,         '', 1200);
+    countUp(document.getElementById('sv-sections'), sectionsViewed,       '', 900);
+    countUp(document.getElementById('sv-clicks'),   stats.totalClicks,    '', 1000);
+
+    // Time display
+    const timeEl = document.getElementById('sv-time');
+    if (timeEl) timeEl.textContent = timeStr;
+
+    // Bars (percentage of max reasonable value)
+    animateBar(document.getElementById('sv-visits-bar'),   Math.min(stats.visits * 8, 95), 300);
+    animateBar(document.getElementById('sv-sections-bar'), (sectionsViewed / SECTIONS.length) * 100, 500);
+    animateBar(document.getElementById('sv-clicks-bar'),   Math.min(stats.totalClicks * 5, 90), 400);
+    animateBar(document.getElementById('sv-time-bar'),     Math.min(sessionSec / 3, 95), 600);
+
+    // Heat map
+    const heatmap = document.getElementById('sv-heatmap');
+    if (heatmap) {
+      heatmap.innerHTML = '';
+      const maxViews = Math.max(...SECTIONS.map(id => stats.sectionViews[id] || 0), 1);
+      SECTIONS.forEach((id, i) => {
+        const views = stats.sectionViews[id] || 0;
+        const pct   = Math.round((views / maxViews) * 100);
+        const row = document.createElement('div');
+        row.className = 'sv-heat-row';
+        row.innerHTML = `
+          <div class="sv-heat-label">${LABELS[i]}</div>
+          <div class="sv-heat-track"><div class="sv-heat-fill" id="svh-${id}" style="width:0%"></div></div>
+          <div class="sv-heat-pct">${views}</div>`;
+        heatmap.appendChild(row);
+        setTimeout(() => {
+          const fill = document.getElementById('svh-' + id);
+          if (fill) fill.style.width = pct + '%';
+        }, 200 + i * 80);
+      });
+    }
+
+    // Last visit
+    const lastEl = document.getElementById('sv-last-visit');
+    if (lastEl && stored.lastVisit) {
+      const d = new Date(stored.lastVisit);
+      lastEl.textContent = 'Last visit: ' + d.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    }
+  }
+
+  if (statsSection) {
+    const statsObs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) renderStats();
+    }, { threshold: 0.15 });
+    statsObs.observe(statsSection);
+  }
+
+  // Live-update session time every second
+  setInterval(() => {
+    const el = document.getElementById('sv-time');
+    if (!el || !rendered) return;
+    const sec = Math.round((Date.now() - stats.sessionStart) / 1000);
+    const m = Math.floor(sec / 60), s = sec % 60;
+    el.textContent = m > 0 ? m + 'm ' + s + 's' : sec + 's';
+    const bar = document.getElementById('sv-time-bar');
+    if (bar) bar.style.width = Math.min(sec / 3, 95) + '%';
+  }, 1000);
+})();
+
+
+// ═══════════════════════════════════════════
 // MOBILE POST-IT CAROUSEL
 // ═══════════════════════════════════════════
 function initMobileCarousel() {
@@ -737,4 +896,3 @@ function mpiFlip(card) {
 
 // Init on load
 window.addEventListener('load', initMobileCarousel);
-
