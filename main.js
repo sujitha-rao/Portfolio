@@ -441,10 +441,14 @@ function spawnStars(el) {
 }
 
 function revealNextPostit() {
-  // On touch devices, clicking the photo scrolls to next section
-  if (window.matchMedia('(hover:none) and (pointer:coarse)').matches) {
-    const about = document.getElementById('about');
-    if (about) about.scrollIntoView({ behavior: 'smooth' });
+  // On mobile: toggle the carousel into view
+  if (window.matchMedia('(max-width:960px)').matches) {
+    const mpi = document.getElementById('mobile-pi-carousel');
+    const hint = document.getElementById('photoHint');
+    if (mpi) {
+      mpi.classList.add('pi-revealed');
+      if (hint) hint.innerHTML = '&#9660; Scroll down for highlights';
+    }
     return;
   }
   
