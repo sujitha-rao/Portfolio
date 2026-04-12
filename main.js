@@ -284,20 +284,10 @@ const cur  = document.getElementById('cursor');
 const ring = document.getElementById('cursorRing');
 let mx = -200, my = -200, rx = -200, ry = -200;
 
-// Detect touch device — disable custom cursor
-const isTouchDevice = () => window.matchMedia('(hover:none) and (pointer:coarse)').matches;
-if (isTouchDevice()) {
-  if (cur)  cur.style.display  = 'none';
-  if (ring) ring.style.display = 'none';
-  document.body.style.cursor = 'auto';
-}
-
 // Keep cursor positioned correctly at all times
 function updateCursorPos(x, y) {
-  if (isTouchDevice()) return;
   mx = x; my = y;
-  cur.style.left  = x + 'px';
-  cur.style.top   = y + 'px';
+  if (cur) { cur.style.left = x + 'px'; cur.style.top = y + 'px'; }
 }
 
 document.addEventListener('mousemove', e => updateCursorPos(e.clientX, e.clientY));
@@ -313,10 +303,12 @@ document.addEventListener('mouseover', e => {
 
 // Smooth ring animation
 (function animRing() {
-  rx += (mx - rx) * 0.14;
-  ry += (my - ry) * 0.14;
-  ring.style.left = rx + 'px';
-  ring.style.top  = ry + 'px';
+  if (ring && ring.offsetParent !== null) {
+    rx += (mx - rx) * 0.14;
+    ry += (my - ry) * 0.14;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+  }
   requestAnimationFrame(animRing);
 })();
 
