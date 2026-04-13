@@ -460,59 +460,44 @@
 
 <!-- PORTFOLIO STATS -->
 <section id="stats-viewer" style="background:rgba(15,118,110,0.97);position:relative;overflow:hidden;z-index:1;">
-  <!-- Decorative bg -->
   <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,92,86,0.98),rgba(15,118,110,0.97),rgba(20,184,166,0.85));z-index:0;"></div>
   <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;border:1px solid rgba(255,255,255,0.06);"></div>
   <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,255,255,0.08);"></div>
   <div style="position:absolute;bottom:-80px;left:-40px;width:350px;height:350px;border-radius:50%;border:1px solid rgba(255,255,255,0.05);"></div>
-
   <div style="position:relative;z-index:1;padding:3.5rem 3rem;">
-    <div class="section-header reveal" style="margin-bottom:2.5rem;">
+    <div class="section-header reveal" style="margin-bottom:2rem;">
       <span class="section-num" style="color:rgba(255,255,255,0.6);">09</span>
       <h2 class="section-title" style="color:#fff;">Portfolio Analytics</h2>
       <div class="section-line" style="background:rgba(255,255,255,0.15);"></div>
     </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin-bottom:2.5rem;" class="reveal">
-      <!-- Visit counter -->
-      <div class="sv-card">
-        <div class="sv-icon">&#128065;</div>
-        <div class="sv-num" id="sv-visits">—</div>
-        <div class="sv-label">Total Visits</div>
-        <div class="sv-bar"><div class="sv-bar-fill" id="sv-visits-bar"></div></div>
-      </div>
-      <!-- This session -->
-      <div class="sv-card">
-        <div class="sv-icon">&#9201;</div>
-        <div class="sv-num" id="sv-time">—</div>
-        <div class="sv-label">Time on Page</div>
-        <div class="sv-bar"><div class="sv-bar-fill" id="sv-time-bar"></div></div>
-      </div>
-      <!-- Sections viewed -->
-      <div class="sv-card">
-        <div class="sv-icon">&#128203;</div>
-        <div class="sv-num" id="sv-sections">—</div>
-        <div class="sv-label">Sections Explored</div>
-        <div class="sv-bar"><div class="sv-bar-fill" id="sv-sections-bar"></div></div>
-      </div>
-      <!-- Interactions -->
-      <div class="sv-card">
-        <div class="sv-icon">&#128084;</div>
-        <div class="sv-num" id="sv-clicks">—</div>
-        <div class="sv-label">Interactions</div>
-        <div class="sv-bar"><div class="sv-bar-fill" id="sv-clicks-bar"></div></div>
-      </div>
+    <div style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:2rem;letter-spacing:.05em;" class="reveal">
+      Real-time collective stats from all visitors to this portfolio
     </div>
 
-    <!-- Section heat map -->
+    <!-- Top row: key numbers -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1.2rem;margin-bottom:2.5rem;" class="reveal">
+      <div class="sv-card"><div class="sv-icon">&#128065;</div><div class="sv-num" id="sv-visits">…</div><div class="sv-label">Total Visits</div><div class="sv-bar"><div class="sv-bar-fill" id="sv-visits-bar"></div></div></div>
+      <div class="sv-card"><div class="sv-icon">&#128073;</div><div class="sv-num" id="sv-today">…</div><div class="sv-label">Visits Today</div><div class="sv-bar"><div class="sv-bar-fill" id="sv-today-bar"></div></div></div>
+      <div class="sv-card"><div class="sv-icon">&#127758;</div><div class="sv-num" id="sv-location">…</div><div class="sv-label">Your Location</div><div style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.45);margin-top:.3rem;" id="sv-location-detail"></div></div>
+      <div class="sv-card"><div class="sv-icon">&#128279;</div><div class="sv-num" id="sv-source">…</div><div class="sv-label">Arrived From</div><div style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.45);margin-top:.3rem;" id="sv-source-detail"></div></div>
+    </div>
+
+    <!-- Top sources bar chart -->
+    <div class="reveal" style="margin-bottom:2rem;">
+      <div style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem;">Top Traffic Sources</div>
+      <div class="sv-heat-row" style="margin-bottom:.55rem;"><div class="sv-heat-label">LinkedIn</div><div class="sv-heat-track"><div class="sv-heat-fill" id="svs-linkedin" style="width:0%"></div></div><div class="sv-heat-pct" id="svs-linkedin-n">—</div></div>
+      <div class="sv-heat-row" style="margin-bottom:.55rem;"><div class="sv-heat-label">Direct</div><div class="sv-heat-track"><div class="sv-heat-fill" id="svs-direct" style="width:0%"></div></div><div class="sv-heat-pct" id="svs-direct-n">—</div></div>
+      <div class="sv-heat-row" style="margin-bottom:.55rem;"><div class="sv-heat-label">GitHub</div><div class="sv-heat-track"><div class="sv-heat-fill" id="svs-github" style="width:0%"></div></div><div class="sv-heat-pct" id="svs-github-n">—</div></div>
+      <div class="sv-heat-row"><div class="sv-heat-label">Other</div><div class="sv-heat-track"><div class="sv-heat-fill" id="svs-other" style="width:0%"></div></div><div class="sv-heat-pct" id="svs-other-n">—</div></div>
+    </div>
+
+    <!-- Section engagement heatmap -->
     <div class="reveal">
-      <div style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem;">Section Engagement</div>
-      <div id="sv-heatmap" style="display:flex;flex-direction:column;gap:.6rem;"></div>
+      <div style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem;">Your Session — Sections Viewed</div>
+      <div id="sv-heatmap" style="display:flex;flex-direction:column;gap:.55rem;"></div>
     </div>
-
-    <!-- Last visit -->
-    <div class="reveal" style="margin-top:2rem;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.35);text-align:center;">
-      <span id="sv-last-visit">Tracking your current session</span>
+    <div class="reveal" style="margin-top:1.5rem;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.3);text-align:center;">
+      <span id="sv-last-visit">Fetching stats…</span>
     </div>
   </div>
 </section>

@@ -282,7 +282,7 @@ setTimeout(hideLoader, 3500);
 // ═══════════════════════════════════════════
 const cur  = document.getElementById('cursor');
 const ring = document.getElementById('cursorRing');
-let mx = -200, my = -200, rx = -200, ry = -200;
+let mx = window.innerWidth/2, my = window.innerHeight/2, rx = window.innerWidth/2, ry = window.innerHeight/2;
 
 // Keep cursor positioned correctly at all times
 function updateCursorPos(x, y) {
@@ -692,161 +692,178 @@ ${msg}`);
 }
 
 // ═══════════════════════════════════════════
-// PORTFOLIO VIEWER STATISTICS
+// PORTFOLIO COLLECTIVE ANALYTICS
+// Real visitor data: CountAPI + ipinfo.io + referrer detection
 // ═══════════════════════════════════════════
 (function() {
-  const STORAGE_KEY = 'ssr_portfolio_stats';
+  const NAMESPACE   = 'sujitha-rao-portfolio';
+  const TOTAL_KEY   = 'total-visits';
+  const TODAY_KEY   = 'visits-' + new Date().toISOString().slice(0,10);
+  const LINKEDIN_KEY= 'src-linkedin';
+  const GITHUB_KEY  = 'src-github';
+  const DIRECT_KEY  = 'src-direct';
+  const OTHER_KEY   = 'src-other';
+
   const SECTIONS = ['hero','about','experience','skills','projects','education','resume','wall-of-love','stats-viewer','contact-section'];
   const LABELS   = ['Intro','About','Experience','Skills','Projects','Education','Resume','Wall of Love','Analytics','Connect'];
 
-  // Load or init persisted stats
-  let stored;
-  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { stored = {}; }
+  // ── Detect traffic source ─────────────────
+  function getSource() {
+    const ref = document.referrer || '';
+    if (/linkedin/i.test(ref))  return 'linkedin';
+    if (/github/i.test(ref))    return 'github';
+    if (ref === '')              return 'direct';
+    return 'other';
+  }
+  const source = getSource();
 
-  const stats = {
-    visits:      (stored.visits || 0) + 1,
-    totalClicks: stored.totalClicks || 0,
-    sectionViews:stored.sectionViews || {},
-    lastVisit:   stored.lastVisit || null,
-    sessionStart: Date.now(),
-  };
-
-  // Persist updated visit count immediately
-  stats.lastVisit = stored.lastVisit;
-  save();
-  stats.lastVisit = new Date().toISOString();
-  save();
-
-  function save() {
+  // ── CountAPI helper ───────────────────────
+  async function hitCounter(key) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        visits:       stats.visits,
-        totalClicks:  stats.totalClicks,
-        sectionViews: stats.sectionViews,
-        lastVisit:    stats.lastVisit,
-      }));
-    } catch(e) {}
+      const r = await fetch(`https://api.countapi.xyz/hit/${NAMESPACE}/${key}`);
+      const d = await r.json();
+      return d.value || 0;
+    } catch(e) { return null; }
+  }
+  async function getCounter(key) {
+    try {
+      const r = await fetch(`https://api.countapi.xyz/get/${NAMESPACE}/${key}`);
+      const d = await r.json();
+      return d.value || 0;
+    } catch(e) { return null; }
   }
 
-  // Track clicks
-  document.addEventListener('click', () => {
-    stats.totalClicks++;
-    save();
-  });
+  // ── ipinfo.io — visitor location ──────────
+  async function getLocation() {
+    try {
+      const r = await fetch('https://ipinfo.io/json?token=');
+      const d = await r.json();
+      return { city: d.city, region: d.region, country: d.country, org: d.org };
+    } catch(e) { return null; }
+  }
 
-  // Track section views via IntersectionObserver
+  // ── Session section views ─────────────────
+  const sessionViews = {};
   const sectionObs = new IntersectionObserver(entries => {
     entries.forEach(e => {
-      if (e.isIntersecting && e.intersectionRatio >= 0.3) {
-        const id = e.target.id;
-        stats.sectionViews[id] = (stats.sectionViews[id] || 0) + 1;
-        save();
+      if (e.isIntersecting && e.intersectionRatio >= 0.25) {
+        sessionViews[e.target.id] = (sessionViews[e.target.id] || 0) + 1;
       }
     });
-  }, { threshold: 0.3 });
+  }, { threshold: 0.25 });
+  SECTIONS.forEach(id => { const el = document.getElementById(id); if (el) sectionObs.observe(el); });
 
-  SECTIONS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) sectionObs.observe(el);
-  });
-
-  // Animated counter helper
-  function countUp(el, target, suffix, duration) {
+  // ── Helpers ───────────────────────────────
+  function countUp(el, target, suffix, dur) {
     if (!el) return;
     const start = Date.now();
-    const from = 0;
-    function tick() {
-      const elapsed = Date.now() - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      el.textContent = Math.round(from + (target - from) * ease) + (suffix || '');
-      if (progress < 1) requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
+    (function tick() {
+      const p = Math.min((Date.now()-start)/dur, 1);
+      const ease = 1 - Math.pow(1-p, 3);
+      el.textContent = Math.round(target * ease) + (suffix||'');
+      if (p < 1) requestAnimationFrame(tick);
+    })();
+  }
+  function animBar(id, pct, delay) {
+    setTimeout(() => { const el = document.getElementById(id); if (el) el.style.width = Math.min(pct,100)+'%'; }, delay||0);
   }
 
-  function animateBar(el, pct, delay) {
-    if (!el) return;
-    setTimeout(() => { el.style.width = Math.min(pct, 100) + '%'; }, delay || 0);
-  }
-
-  // Render stats once the section scrolls into view
+  // ── Main render ───────────────────────────
   const statsSection = document.getElementById('stats-viewer');
   let rendered = false;
 
-  function renderStats() {
+  async function renderStats() {
     if (rendered) return;
     rendered = true;
 
-    const sessionSec = Math.round((Date.now() - stats.sessionStart) / 1000);
-    const sessionMin = Math.floor(sessionSec / 60);
-    const sessionSecRem = sessionSec % 60;
-    const timeStr = sessionMin > 0 ? sessionMin + 'm ' + sessionSecRem + 's' : sessionSec + 's';
+    // Increment counters (fire and forget)
+    hitCounter(TOTAL_KEY);
+    hitCounter(TODAY_KEY);
+    hitCounter('src-' + source);
 
-    const sectionsViewed = Object.keys(stats.sectionViews).length;
+    // Fetch all counts in parallel
+    const [total, today, linkedin, github, direct, other] =
+      await Promise.all([
+        getCounter(TOTAL_KEY),
+        getCounter(TODAY_KEY),
+        getCounter(LINKEDIN_KEY),
+        getCounter(GITHUB_KEY),
+        getCounter(DIRECT_KEY),
+        getCounter(OTHER_KEY),
+      ]);
 
-    // Animate counters
-    countUp(document.getElementById('sv-visits'),   stats.visits,         '', 1200);
-    countUp(document.getElementById('sv-sections'), sectionsViewed,       '', 900);
-    countUp(document.getElementById('sv-clicks'),   stats.totalClicks,    '', 1000);
+    // Total visits
+    const totalVal = (total||1) + 1; // +1 for current hit
+    if (totalVal) countUp(document.getElementById('sv-visits'), totalVal, '', 1200);
+    animBar('sv-visits-bar', Math.min((totalVal/500)*100, 95), 300);
 
-    // Time display
-    const timeEl = document.getElementById('sv-time');
-    if (timeEl) timeEl.textContent = timeStr;
+    // Today
+    const todayVal = (today||1) + 1;
+    if (todayVal) countUp(document.getElementById('sv-today'), todayVal, '', 800);
+    animBar('sv-today-bar', Math.min((todayVal/50)*100, 95), 400);
 
-    // Bars (percentage of max reasonable value)
-    animateBar(document.getElementById('sv-visits-bar'),   Math.min(stats.visits * 8, 95), 300);
-    animateBar(document.getElementById('sv-sections-bar'), (sectionsViewed / SECTIONS.length) * 100, 500);
-    animateBar(document.getElementById('sv-clicks-bar'),   Math.min(stats.totalClicks * 5, 90), 400);
-    animateBar(document.getElementById('sv-time-bar'),     Math.min(sessionSec / 3, 95), 600);
+    // Sources
+    const srcMap = { linkedin: linkedin||0, github: github||0, direct: direct||0, other: other||0 };
+    const srcTotal = Math.max(Object.values(srcMap).reduce((a,b)=>a+b,0), 1);
+    const srcData = [
+      { id:'linkedin', label:'LinkedIn', val: srcMap.linkedin },
+      { id:'direct',   label:'Direct',  val: srcMap.direct },
+      { id:'github',   label:'GitHub',  val: srcMap.github },
+      { id:'other',    label:'Other',   val: srcMap.other },
+    ];
+    const maxSrc = Math.max(...srcData.map(s=>s.val), 1);
+    srcData.forEach((s,i) => {
+      const numEl = document.getElementById('svs-'+s.id+'-n');
+      const pct   = Math.round((s.val/srcTotal)*100);
+      if (numEl) numEl.textContent = pct + '%';
+      animBar('svs-'+s.id, (s.val/maxSrc)*100, 200 + i*100);
+    });
 
-    // Heat map
+    // Source for current visitor
+    const srcEl   = document.getElementById('sv-source');
+    const srcDetEl= document.getElementById('sv-source-detail');
+    const srcLabels = {linkedin:'LinkedIn', github:'GitHub', direct:'Direct link', other:'Web search / other'};
+    if (srcEl) srcEl.textContent = srcLabels[source] || 'Unknown';
+    if (srcDetEl) srcDetEl.textContent = document.referrer ? new URL(document.referrer).hostname : 'No referrer detected';
+
+    // Location
+    const locEl     = document.getElementById('sv-location');
+    const locDetail = document.getElementById('sv-location-detail');
+    getLocation().then(loc => {
+      if (loc && loc.city) {
+        if (locEl) locEl.textContent = loc.city + (loc.country ? ', '+loc.country : '');
+        if (locDetail) locDetail.textContent = loc.region || '';
+      } else {
+        if (locEl) locEl.textContent = 'Private';
+        if (locDetail) locDetail.textContent = 'Location hidden';
+      }
+    });
+
+    // Session section heatmap
     const heatmap = document.getElementById('sv-heatmap');
     if (heatmap) {
       heatmap.innerHTML = '';
-      const maxViews = Math.max(...SECTIONS.map(id => stats.sectionViews[id] || 0), 1);
-      SECTIONS.forEach((id, i) => {
-        const views = stats.sectionViews[id] || 0;
-        const pct   = Math.round((views / maxViews) * 100);
+      const maxV = Math.max(...SECTIONS.map(id => sessionViews[id]||0), 1);
+      SECTIONS.forEach((id,i) => {
+        const v = sessionViews[id]||0;
+        const pct = Math.round((v/maxV)*100);
         const row = document.createElement('div');
         row.className = 'sv-heat-row';
-        row.innerHTML = `
-          <div class="sv-heat-label">${LABELS[i]}</div>
-          <div class="sv-heat-track"><div class="sv-heat-fill" id="svh-${id}" style="width:0%"></div></div>
-          <div class="sv-heat-pct">${views}</div>`;
+        row.innerHTML = `<div class="sv-heat-label">${LABELS[i]}</div><div class="sv-heat-track"><div class="sv-heat-fill" id="svh-${id}"></div></div><div class="sv-heat-pct">${v}</div>`;
         heatmap.appendChild(row);
-        setTimeout(() => {
-          const fill = document.getElementById('svh-' + id);
-          if (fill) fill.style.width = pct + '%';
-        }, 200 + i * 80);
+        setTimeout(() => { const f = document.getElementById('svh-'+id); if(f) f.style.width=pct+'%'; }, 200+i*70);
       });
     }
 
-    // Last visit
+    // Status line
     const lastEl = document.getElementById('sv-last-visit');
-    if (lastEl && stored.lastVisit) {
-      const d = new Date(stored.lastVisit);
-      lastEl.textContent = 'Last visit: ' + d.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric',year:'numeric'});
-    }
+    if (lastEl) lastEl.textContent = 'Stats updated live • Powered by CountAPI & ipinfo.io';
   }
 
   if (statsSection) {
-    const statsObs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) renderStats();
-    }, { threshold: 0.15 });
-    statsObs.observe(statsSection);
+    const obs = new IntersectionObserver(entries => { if (entries[0].isIntersecting) renderStats(); }, { threshold: 0.1 });
+    obs.observe(statsSection);
   }
-
-  // Live-update session time every second
-  setInterval(() => {
-    const el = document.getElementById('sv-time');
-    if (!el || !rendered) return;
-    const sec = Math.round((Date.now() - stats.sessionStart) / 1000);
-    const m = Math.floor(sec / 60), s = sec % 60;
-    el.textContent = m > 0 ? m + 'm ' + s + 's' : sec + 's';
-    const bar = document.getElementById('sv-time-bar');
-    if (bar) bar.style.width = Math.min(sec / 3, 95) + '%';
-  }, 1000);
 })();
 
 
