@@ -278,65 +278,41 @@ setTimeout(hideLoader, 3500);
 
 
 // ═══════════════════════════════════════════
-// CURSOR — always visible, re-initialises on re-entry
+// CURSOR — always visible on desktop, hidden on touch
 // ═══════════════════════════════════════════
 const cur  = document.getElementById('cursor');
 const ring = document.getElementById('cursorRing');
-let mx = window.innerWidth/2, my = window.innerHeight/2, rx = window.innerWidth/2, ry = window.innerHeight/2;
+let rx = window.innerWidth/2, ry = window.innerHeight/2;
+let mx = rx, my = ry;
 
-// Keep cursor positioned correctly at all times
-function updateCursorPos(x, y) {
-  mx = x; my = y;
-  if (cur) { cur.style.left = x + 'px'; cur.style.top = y + 'px'; }
-}
+// Place at center on load
+if (cur)  { cur.style.left = mx+'px'; cur.style.top = my+'px'; }
+if (ring) { ring.style.left=rx+'px'; ring.style.top=ry+'px'; }
 
-document.addEventListener('mousemove', e => updateCursorPos(e.clientX, e.clientY));
-
-// Re-enter from outside browser window — mouseover on document catches it
-document.addEventListener('mouseenter', e => updateCursorPos(e.clientX, e.clientY));
-
-// Ensure cursor is visible when mouse re-enters any section or the page
-document.addEventListener('mouseover', e => {
-  cur.style.opacity  = '1';
-  ring.style.opacity = '1';
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  if (cur)  { cur.style.left=mx+'px'; cur.style.top=my+'px'; }
 });
 
-// Smooth ring animation
 (function animRing() {
-  if (ring && ring.offsetParent !== null) {
-    rx += (mx - rx) * 0.14;
-    ry += (my - ry) * 0.14;
-    ring.style.left = rx + 'px';
-    ring.style.top  = ry + 'px';
-  }
+  rx += (mx-rx)*0.13; ry += (my-ry)*0.13;
+  if (ring) { ring.style.left=rx+'px'; ring.style.top=ry+'px'; }
   requestAnimationFrame(animRing);
 })();
 
-document.addEventListener('mousedown', () => document.body.classList.add('clicking'));
-document.addEventListener('mouseup',   () => document.body.classList.remove('clicking'));
+document.addEventListener('mousedown', ()=>document.body.classList.add('clicking'));
+document.addEventListener('mouseup',   ()=>document.body.classList.remove('clicking'));
 
-// Hover expand: attach once to all interactive elements
+// Hover grow
 function attachCursorHovers() {
-  document.querySelectorAll(
-    'a, button, .skill-pill, .cert-badge, .edu-card, .project-card, ' +
-    '.postit, .stat-card, .social-chip, .chat-quick, .testimonial-card, ' +
-    '[onclick], input, textarea, select'
-  ).forEach(el => {
-    if (el.dataset.cursorBound) return;
-    el.dataset.cursorBound = '1';
-    el.addEventListener('mouseenter', () => {
-      cur.classList.add('hover');
-      ring.classList.add('hover');
-    });
-    el.addEventListener('mouseleave', () => {
-      cur.classList.remove('hover');
-      ring.classList.remove('hover');
-    });
+  document.querySelectorAll('a,button,.skill-pill,.cert-badge,.edu-card,.project-card,.postit,.stat-card,.social-chip,.chat-quick,.testimonial-card,.mpi-card,.sv-card,.photo-wrap,[onclick]').forEach(el=>{
+    if(el.dataset.ch) return; el.dataset.ch='1';
+    el.addEventListener('mouseenter',()=>{if(cur)cur.classList.add('hover');if(ring)ring.classList.add('hover');});
+    el.addEventListener('mouseleave',()=>{if(cur)cur.classList.remove('hover');if(ring)ring.classList.remove('hover');});
   });
 }
 attachCursorHovers();
-// Re-bind after dynamic content (testimonials added, etc.)
-setInterval(attachCursorHovers, 2000);
+setInterval(attachCursorHovers, 2500);
 
 
 // ═══════════════════════════════════════════
@@ -693,76 +669,165 @@ ${msg}`);
 
 // ═══════════════════════════════════════════
 // PORTFOLIO COLLECTIVE ANALYTICS
-// Real visitor data: CountAPI + ipinfo.io + referrer detection
+// CountAPI for persistent counters + ipinfo for location
 // ═══════════════════════════════════════════
 (function() {
-  const NAMESPACE   = 'sujitha-rao-portfolio';
-  const TOTAL_KEY   = 'total-visits';
-  const TODAY_KEY   = 'visits-' + new Date().toISOString().slice(0,10);
-  const LINKEDIN_KEY= 'src-linkedin';
-  const GITHUB_KEY  = 'src-github';
-  const DIRECT_KEY  = 'src-direct';
-  const OTHER_KEY   = 'src-other';
+  const NS = 'ssr-portfolio-v3';
 
-  const SECTIONS = ['hero','about','experience','skills','projects','education','resume','wall-of-love','stats-viewer','contact-section'];
-  const LABELS   = ['Intro','About','Experience','Skills','Projects','Education','Resume','Wall of Love','Analytics','Connect'];
+  // Source keys
+  const SRC_KEYS = {
+    linkedin: NS+'/src-linkedin',
+    github:   NS+'/src-github',
+    direct:   NS+'/src-direct',
+    other:    NS+'/src-other',
+  };
+  // Location word-cloud: top cities tracked
+  const CITY_KEYS = ['Atlanta','San Francisco','New York','Seattle','London','Bangalore','Mumbai','Sydney','Toronto','Berlin','Chicago','Austin'];
 
-  // ── Detect traffic source ─────────────────
   function getSource() {
-    const ref = document.referrer || '';
-    if (/linkedin/i.test(ref))  return 'linkedin';
-    if (/github/i.test(ref))    return 'github';
-    if (ref === '')              return 'direct';
+    const r = document.referrer||'';
+    if(/linkedin/i.test(r)) return 'linkedin';
+    if(/github/i.test(r))   return 'github';
+    if(r==='')               return 'direct';
     return 'other';
   }
   const source = getSource();
 
-  // ── CountAPI helper ───────────────────────
-  async function hitCounter(key) {
-    try {
-      const r = await fetch(`https://api.countapi.xyz/hit/${NAMESPACE}/${key}`);
-      const d = await r.json();
-      return d.value || 0;
-    } catch(e) { return null; }
+  async function hitCount(key) {
+    try { const r=await fetch(`https://api.countapi.xyz/hit/${key}`); return (await r.json()).value||0; } catch(e){return 0;}
   }
-  async function getCounter(key) {
-    try {
-      const r = await fetch(`https://api.countapi.xyz/get/${NAMESPACE}/${key}`);
-      const d = await r.json();
-      return d.value || 0;
-    } catch(e) { return null; }
+  async function getCount(key) {
+    try { const r=await fetch(`https://api.countapi.xyz/get/${key}`); return (await r.json()).value||0; } catch(e){return 0;}
   }
-
-  // ── ipinfo.io — visitor location ──────────
   async function getLocation() {
-    try {
-      const r = await fetch('https://ipinfo.io/json?token=');
-      const d = await r.json();
-      return { city: d.city, region: d.region, country: d.country, org: d.org };
-    } catch(e) { return null; }
+    try { const r=await fetch('https://ipinfo.io/json'); return await r.json(); } catch(e){return null;}
   }
 
-  // ── Session section views ─────────────────
-  const sessionViews = {};
-  const sectionObs = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting && e.intersectionRatio >= 0.25) {
-        sessionViews[e.target.id] = (sessionViews[e.target.id] || 0) + 1;
-      }
-    });
-  }, { threshold: 0.25 });
-  SECTIONS.forEach(id => { const el = document.getElementById(id); if (el) sectionObs.observe(el); });
-
-  // ── Helpers ───────────────────────────────
-  function countUp(el, target, suffix, dur) {
-    if (!el) return;
-    const start = Date.now();
-    (function tick() {
-      const p = Math.min((Date.now()-start)/dur, 1);
-      const ease = 1 - Math.pow(1-p, 3);
-      el.textContent = Math.round(target * ease) + (suffix||'');
-      if (p < 1) requestAnimationFrame(tick);
+  // Animated counter
+  function countUp(el, target, dur) {
+    if(!el||!target) return;
+    const s=Date.now();
+    (function t(){
+      const p=Math.min((Date.now()-s)/dur,1), e=1-Math.pow(1-p,3);
+      el.textContent=Math.round(target*e).toLocaleString();
+      if(p<1) requestAnimationFrame(t);
     })();
+  }
+
+  // Word cloud renderer
+  function renderCloud(containerId, words) {
+    // words = [{text, count}] sorted desc
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    el.innerHTML = '';
+    if(!words.length){ el.innerHTML='<span style="color:rgba(255,255,255,0.2);font-family:var(--mono);font-size:12px;">Gathering data…</span>'; return; }
+    const max = words[0].count || 1;
+    const sizes = [2.2,1.75,1.45,1.2,1.05,0.92,0.82,0.75];
+    const opacities = [1,.92,.82,.72,.65,.58,.52,.48];
+    words.slice(0,12).forEach((w,i)=>{
+      const span = document.createElement('span');
+      const sz   = sizes[Math.min(i,sizes.length-1)];
+      const op   = opacities[Math.min(i,opacities.length-1)];
+      const rotate = (Math.random()-.5)*12; // subtle tilt
+      span.textContent = w.text;
+      span.style.cssText = `
+        font-family:var(--serif);
+        font-size:${sz}rem;
+        color:rgba(255,255,255,${op});
+        display:inline-block;
+        transform:rotate(${rotate}deg);
+        line-height:1.3;
+        cursor:default;
+        transition:opacity .2s,transform .2s;
+        padding:0 .15rem;
+      `;
+      span.onmouseenter = ()=>{ span.style.opacity=1; span.style.transform=`rotate(0deg) scale(1.1)`; };
+      span.onmouseleave = ()=>{ span.style.opacity=op; span.style.transform=`rotate(${rotate}deg) scale(1)`; };
+      el.appendChild(span);
+    });
+  }
+
+  // ── Main ───────────────────────────────────
+  const statsSection = document.getElementById('stats-viewer');
+  let rendered = false;
+
+  async function renderStats() {
+    if(rendered) return;
+    rendered = true;
+
+    // Increment total + source counter
+    const [totalVal] = await Promise.all([
+      hitCount(NS+'/total'),
+      hitCount(SRC_KEYS[source]),
+    ]);
+
+    // Get all source counts
+    const [li,gh,di,ot] = await Promise.all([
+      getCount(SRC_KEYS.linkedin),
+      getCount(SRC_KEYS.github),
+      getCount(SRC_KEYS.direct),
+      getCount(SRC_KEYS.other),
+    ]);
+
+    // Total visits
+    countUp(document.getElementById('sv-visits'), Math.max(totalVal,1), 1400);
+    const vBar = document.getElementById('sv-visits-bar');
+    if(vBar) setTimeout(()=>vBar.style.width=Math.min((totalVal/300)*100,95)+'%', 400);
+
+    // Source word cloud
+    const srcWords = [
+      {text:'LinkedIn',  count:li},
+      {text:'Direct',    count:di},
+      {text:'GitHub',    count:gh},
+      {text:'Other',     count:ot},
+    ].sort((a,b)=>b.count-a.count).filter(w=>w.count>0);
+    setTimeout(()=>renderCloud('sv-source-cloud', srcWords), 600);
+
+    // Location: get current visitor location, use to increment city counter
+    const loc = await getLocation();
+    const locEl  = document.getElementById('sv-location');
+    const locSub = document.getElementById('sv-location-sub');
+    if(loc && loc.city) {
+      if(locEl)  locEl.textContent  = loc.city;
+      if(locSub) locSub.textContent = (loc.region||'') + (loc.country ? ', '+loc.country : '');
+      // Increment that city's counter
+      const cityKey = NS+'/city-'+loc.city.replace(/\s+/g,'-').toLowerCase();
+      hitCount(cityKey);
+    } else {
+      if(locEl)  locEl.textContent  = 'Private';
+      if(locSub) locSub.textContent = 'Location not available';
+    }
+
+    // Source card
+    const srcEl  = document.getElementById('sv-source');
+    const srcSub = document.getElementById('sv-source-sub');
+    const srcLabel={linkedin:'LinkedIn',github:'GitHub',direct:'Direct',other:'Web/Other'};
+    if(srcEl)  srcEl.textContent  = srcLabel[source];
+    if(srcSub) srcSub.textContent = document.referrer ? new URL(document.referrer).hostname : 'No referrer';
+
+    // Location word cloud: show top tracked cities using our known keys
+    const cityFetches = CITY_KEYS.map(city=>
+      getCount(NS+'/city-'+city.replace(/\s+/g,'-').toLowerCase()).then(count=>({text:city,count}))
+    );
+    const cityData = await Promise.all(cityFetches);
+    const topCities = cityData.filter(c=>c.count>0).sort((a,b)=>b.count-a.count);
+    // Add current city if not tracked
+    if(loc&&loc.city&&!CITY_KEYS.includes(loc.city)){
+      topCities.unshift({text:loc.city,count:1});
+    }
+    if(!topCities.length) topCities.push({text:'Gathering…',count:1});
+    setTimeout(()=>renderCloud('sv-location-cloud', topCities), 800);
+
+    // Footer
+    const ft = document.getElementById('sv-footer');
+    if(ft) ft.textContent = 'Data collected via CountAPI & ipinfo.io • Refreshes on each visit';
+  }
+
+  if(statsSection){
+    const obs=new IntersectionObserver(e=>{if(e[0].isIntersecting) renderStats();},{threshold:0.1});
+    obs.observe(statsSection);
+  }
+})();
   }
   function animBar(id, pct, delay) {
     setTimeout(() => { const el = document.getElementById(id); if (el) el.style.width = Math.min(pct,100)+'%'; }, delay||0);
