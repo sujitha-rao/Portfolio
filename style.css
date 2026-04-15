@@ -769,11 +769,7 @@ footer span{color:var(--teal);}
   }
   .btn-primary:active{background:var(--teal-dark)!important;}
   .btn-outline:active{background:var(--teal-dim)!important;}
-}
-
-
-  .cursor,.cursor-ring{display:none!important;visibility:hidden!important;pointer-events:none!important;}
-}
+}}
 /* ═══════════════════════════════════════════
    TOUCH / MOBILE — no custom cursor
    Covers phones and tablets
@@ -818,9 +814,7 @@ footer span{color:var(--teal);}
   .cursor, .cursor-ring { display: none !important; visibility: hidden !important; }
 }
 
-/* Cursor visible only after first mouse movement */
-body.mouse-active .cursor { opacity: 1 !important; }
-body.mouse-active .cursor-ring { opacity: 1 !important; }
+
 
 /* Word cloud word sizes & colours */
 #sv-source-cloud span, #sv-location-cloud span {
@@ -830,3 +824,8 @@ body.mouse-active .cursor-ring { opacity: 1 !important; }
   cursor: default;
   transition: opacity .2s, transform .2s;
 }
+
+/* ═══════════════════════════════════════════
+   TOUCH DEVICES: hide custom cursor, restore default
+═══════════════════════════════════════════ */
+

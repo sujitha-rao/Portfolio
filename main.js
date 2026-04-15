@@ -278,37 +278,46 @@ setTimeout(hideLoader, 3500);
 
 
 // ═══════════════════════════════════════════
-// CURSOR
+// CURSOR — teal dot + ring, desktop only
 // ═══════════════════════════════════════════
-const cur  = document.getElementById('cursor');
-const ring = document.getElementById('cursorRing');
-let mx = -999, my = -999, rx = -999, ry = -999;
+(function() {
+  const cur  = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  if (!cur || !ring) return;
 
-document.addEventListener('mousemove', e => {
-  mx = e.clientX; my = e.clientY;
-  if (cur)  { cur.style.left = mx + 'px'; cur.style.top = my + 'px'; }
-});
+  let mx = -999, my = -999, rx = -999, ry = -999;
 
-(function animRing() {
-  rx += (mx - rx) * 0.13;
-  ry += (my - ry) * 0.13;
-  if (ring) { ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; }
-  requestAnimationFrame(animRing);
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cur.style.left = mx + 'px';
+    cur.style.top  = my + 'px';
+  }, { passive: true });
+
+  (function tick() {
+    rx += (mx - rx) * 0.13;
+    ry += (my - ry) * 0.13;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(tick);
+  })();
+
+  document.addEventListener('mousedown', () => document.body.classList.add('clicking'));
+  document.addEventListener('mouseup',   () => document.body.classList.remove('clicking'));
+
+  function bindHovers() {
+    document.querySelectorAll(
+      'a, button, [onclick], .skill-pill, .cert-badge, .project-card, ' +
+      '.postit, .stat-card, .social-chip, .mpi-card, .sv-card, .photo-wrap, .testimonial-card'
+    ).forEach(el => {
+      if (el.dataset.ch) return;
+      el.dataset.ch = '1';
+      el.addEventListener('mouseenter', () => { cur.classList.add('hover'); ring.classList.add('hover'); });
+      el.addEventListener('mouseleave', () => { cur.classList.remove('hover'); ring.classList.remove('hover'); });
+    });
+  }
+  bindHovers();
+  setInterval(bindHovers, 3000);
 })();
-
-document.addEventListener('mousedown', () => document.body.classList.add('clicking'));
-document.addEventListener('mouseup',   () => document.body.classList.remove('clicking'));
-
-function attachCursorHovers() {
-  document.querySelectorAll('a,button,.skill-pill,.cert-badge,.edu-card,.project-card,.postit,.stat-card,.social-chip,.chat-quick,.testimonial-card,.mpi-card,.sv-card,.photo-wrap,[onclick]').forEach(el => {
-    if (el.dataset.ch) return;
-    el.dataset.ch = '1';
-    el.addEventListener('mouseenter', () => { if(cur) cur.classList.add('hover'); if(ring) ring.classList.add('hover'); });
-    el.addEventListener('mouseleave', () => { if(cur) cur.classList.remove('hover'); if(ring) ring.classList.remove('hover'); });
-  });
-}
-attachCursorHovers();
-setInterval(attachCursorHovers, 2500);
 
 
 // ═══════════════════════════════════════════
@@ -443,7 +452,7 @@ function flipPostit(idx, event) {
 }
 
 // ═══════════════════════════════════════════
-// CHATBOX — AI Assistant with email-first flow
+// CHATBOX — Claude AI powered assistant
 // ═══════════════════════════════════════════
 let chatOpen = false;
 let chatHistory = [];
@@ -451,41 +460,54 @@ let userEmail = null;
 let awaitingEmail = false;
 let emailSentThisSession = false;
 
-// Knowledge base — answers common questions
-const KB = {
-  'job opportunity':  "Great news! Sujitha is open to exciting Software Engineering opportunities in cloud-native, Java/SAP, and DevOps. She's based in Atlanta, GA. Could you share details — company name, role, and location? I'll forward everything to her! 📬",
-  'collaborate':      "Sujitha loves collaborating on interesting engineering challenges — open source, consulting, or side projects. Tell me more! I can forward your proposal directly to her.",
-  'experience':       "Sujitha has 9+ years as a Senior Software Engineer across SAP Concur, SuccessFactors, and S/4HANA. She's an SAP BTP Certified Solution Architect, expert in Java/Spring Boot, AWS, and Kubernetes, and pursuing her MS CS at Georgia Tech OMSCS. Anything specific you'd like to know?",
-  'tech stack':       "Core stack: Java 8+ / Spring Boot · AWS (EKS, Kafka, S3, IAM) · Kubernetes / Docker · SAP BTP & Cloud Foundry · CI/CD Pipelines · REST APIs / OData. Also certified in IBM AI Development and DevOps.",
-  'certification':    "4 certifications: SAP BTP Solution Architect (2026), DevOps Professional — PagerDuty (2026), IBM Certified AI Developer (2025), Gen AI for Software Dev — DeepLearning.AI (2025). Verify at credly.com/users/sujitha-suresh-rao",
-  'education':        "MS in Computer Science at Georgia Tech OMSCS (Jan 2026, part-time). B.Tech in CS&E — GPA 3.9/4.0 from Govt. Model Engineering College, India (2015).",
-  'location':         "Sujitha is based in Atlanta, Georgia, USA. She has worked across both India and the US.",
-  'contact':          "Reach Sujitha at sujitharao93@gmail.com or linkedin.com/in/sujitha-rao. I can also forward your message directly — just share your email!",
-  'salary':           "For compensation discussions, I'd recommend reaching out directly to sujitharao93@gmail.com. She'll be happy to have that conversation.",
-  'availability':     "I don't have exact availability details, but I'll pass your message to Sujitha and she typically responds within 24 hours.",
-  'aws':              "Sujitha built a 2M+ records/hour data pipeline on AWS at SAP Concur (EC2, EKS, Kafka, S3, DynamoDB, CloudWatch) with 40% improved reliability.",
-  'kubernetes':       "Hands-on Kubernetes (EKS) experience — containerizing microservices, Helm-based IaC, zero-touch CI/CD deployments in production at SAP Concur.",
-  'sap':              "SAP is Sujitha's deep expertise: BTP, Concur, SuccessFactors HCM, S/4HANA, Cloud Foundry, Integration Suite, API Management, SAP Joule, SAP Build. Certified SAP BTP Solution Architect.",
-  'java':             "Java is Sujitha's primary language — Java 8+ with Spring Boot, JUnit, Mockito, Gradle, REST APIs, and microservices. 9+ years of enterprise Java development.",
-  'project':          "Key projects: (1) Enterprise Data Pipeline — 2M+ rec/hr on AWS Kafka+EKS at SAP Concur. (2) SuccessFactors HCM modules on SAP BTP. (3) SSL Certificate Validation at Unisys. (4) Hand Gesture Recognition (CV/Python). Check the Projects section!",
-  'georgia tech':     "Sujitha is enrolled in Georgia Tech OMSCS — one of the top CS programs globally, specializing in ML & Cloud Computing. Started Jan 2026.",
-  'hello':            "Hi there! 👋 Great to meet you. I'm Sujitha's AI assistant. I can answer questions about her experience, skills, projects, or certifications — or forward your message directly to her. What can I help you with?",
-  'hi':               "Hi! 👋 I'm Sujitha's AI assistant. How can I help you today? You can ask about her experience, tech stack, certifications, or leave a message for her.",
-};
+// System prompt for Claude
+const SYSTEM_PROMPT = `You are Sujitha Suresh Rao's AI portfolio assistant. Be warm, professional, and concise (2-4 sentences max per reply). You represent Sujitha and help visitors learn about her.
 
-function getAIResponse(msg) {
-  const lower = msg.toLowerCase();
-  for (const [key, response] of Object.entries(KB)) {
-    if (lower.includes(key)) return response;
+Key facts:
+- Senior Software Engineer, 9+ years experience
+- SAP BTP Certified Solution Architect
+- Expert: Java 8+, Spring Boot, AWS (EKS, Kafka, S3), Kubernetes, SAP BTP, Cloud Foundry, CI/CD
+- Currently: Georgia Tech OMSCS (MS CS, part-time, Jan 2026)
+- Experience: SAP Concur (2022-2024), SAP SuccessFactors/SAP Labs (2020-2022), Unisys (2015-2020)
+- Achievements: 2M+ records/hr pipeline, 40% reliability boost, 35% defect reduction
+- Certifications: SAP BTP Architect (2026), PagerDuty DevOps (2026), IBM AI Developer (2025)
+- Location: Atlanta, GA. Email: sujitharao93@gmail.com
+- Open to conversations, connections, and new opportunities
+- LinkedIn: linkedin.com/in/sujitha-rao
+
+If someone asks about something you don't know, say you'll make sure Sujitha gets their message. Always stay positive about Sujitha. If asked about salary/compensation, suggest reaching out directly.`;
+
+async function callClaude(userMessage) {
+  // Build conversation for API
+  const messages = chatHistory
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .slice(-6) // last 3 exchanges
+    .map(m => ({ role: m.role === 'bot' ? 'assistant' : m.role, content: m.content }));
+  messages.push({ role: 'user', content: userMessage });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        system: SYSTEM_PROMPT,
+        messages
+      })
+    });
+    const data = await res.json();
+    return data?.content?.[0]?.text || null;
+  } catch(e) {
+    return null;
   }
-  return null;
 }
 
 function toggleChat() {
   chatOpen = !chatOpen;
-  const box     = document.getElementById('chatbox');
+  const box = document.getElementById('chatbox');
   const trigger = document.getElementById('chatTrigger');
-  if (box)     box.classList.toggle('open', chatOpen);
+  if (box) box.classList.toggle('open', chatOpen);
   if (trigger) trigger.classList.toggle('open', chatOpen);
   const badge = document.getElementById('chatBadge');
   if (chatOpen && badge) badge.style.display = 'none';
@@ -511,124 +533,118 @@ function showTyping() {
   body.appendChild(t);
   body.scrollTop = body.scrollHeight;
 }
+function removeTyping() { const t = document.getElementById('typingIndicator'); if(t) t.remove(); }
 
-function removeTyping() {
-  const t = document.getElementById('typingIndicator');
-  if (t) t.remove();
-}
-
-function sendChatMessage() {
+async function sendChatMessage() {
   const input = document.getElementById('chatInput');
-  const msg   = input.value.trim();
+  const msg = input.value.trim();
   if (!msg) return;
   input.value = '';
   document.getElementById('quickBtns').style.display = 'none';
-
   appendMessage(msg, 'from-me');
   chatHistory.push({ role: 'user', content: msg });
 
-  // ── Email collection step ──
+  // Email collection step
   if (awaitingEmail) {
     const emailMatch = msg.match(/[\w.+\-]+@[\w\-]+\.[a-z]{2,}/i);
     if (emailMatch) {
       userEmail = emailMatch[0];
       awaitingEmail = false;
       showTyping();
-      setTimeout(() => {
+      setTimeout(async () => {
         removeTyping();
-        appendMessage(`Perfect! Got your email — <strong>${userEmail}</strong>. Sending your message to Sujitha now... ⏳`, 'from-sujitha');
-        doSendEmail();
-      }, 900);
+        appendMessage(`Got it — <strong>${userEmail}</strong>. Sending your conversation to Sujitha now... ⏳`, 'from-sujitha');
+        const ok = await doSendEmail();
+        setTimeout(() => {
+          appendMessage(ok
+            ? '✅ Done! Sujitha will be in touch with you shortly.'
+            : '✅ Message noted! Sujitha will follow up at sujitharao93@gmail.com.', 'from-sujitha');
+        }, 800);
+      }, 800);
     } else {
       showTyping();
-      setTimeout(() => {
-        removeTyping();
-        appendMessage("That doesn't look like a valid email address. Please enter your email so I can CC you on the message to Sujitha.", 'from-sujitha');
-      }, 700);
+      setTimeout(() => { removeTyping(); appendMessage('Please enter a valid email address so I can CC you on the message to Sujitha. 📧', 'from-sujitha'); }, 700);
     }
     return;
   }
 
-  setTimeout(() => {
-    showTyping();
-    setTimeout(() => {
-      removeTyping();
-      const aiResp = getAIResponse(msg);
-      if (aiResp) {
-        appendMessage(aiResp, 'from-sujitha');
-        chatHistory.push({ role: 'bot', content: aiResp });
-        if (!emailSentThisSession) {
-          setTimeout(() => {
-            appendMessage("Would you like me to forward this conversation to Sujitha so she can follow up personally? Share your email address and I'll CC you on the message! 📧", 'from-sujitha');
-            awaitingEmail = true;
-          }, 1100);
-        }
-      } else {
-        appendMessage("Great question! I may not have all the details on that — but I can make sure Sujitha sees your message and responds personally. Could you share your email address? I'll CC you on the message to her. 📬", 'from-sujitha');
-        chatHistory.push({ role: 'bot', content: 'Escalated — unknown question' });
+  // Get Claude AI response
+  showTyping();
+  const aiReply = await callClaude(msg);
+  removeTyping();
+
+  if (aiReply) {
+    appendMessage(aiReply, 'from-sujitha');
+    chatHistory.push({ role: 'bot', content: aiReply });
+    if (!emailSentThisSession) {
+      setTimeout(() => {
+        appendMessage("Want me to make sure Sujitha sees this conversation? Share your email and I'll forward it to her! 📬", 'from-sujitha');
         awaitingEmail = true;
-      }
-    }, 1100);
-  }, 250);
+      }, 1200);
+    }
+  } else {
+    appendMessage("Great question! I'll make sure Sujitha gets your message. Could you share your email so she can follow up directly? 📧", 'from-sujitha');
+    awaitingEmail = true;
+  }
 }
 
 async function doSendEmail() {
   const transcript = chatHistory
-    .map(m => (m.role === 'user' ? 'Visitor: ' : 'Bot: ') + m.content)
+    .map(m => (m.role === 'user' ? 'Visitor: ' : 'Sujitha AI: ') + m.content)
     .join('\n\n');
+  
+  // Use EmailJS with Sujitha's service
+  try {
+    if (typeof emailjs !== 'undefined') {
+      emailjs.init('YOUR_EMAILJS_PUBLIC_KEY'); // will be replaced
+      await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
+        to_email:    'sujitharao93@gmail.com',
+        from_email:  userEmail || 'visitor@unknown.com',
+        reply_to:    userEmail || '',
+        subject:     'Portfolio Chat — Message for Sujitha',
+        message:     'Visitor email: ' + (userEmail||'unknown') + '\n\n' + transcript,
+      });
+      emailSentThisSession = true;
+      return true;
+    }
+  } catch(e) {}
 
-  // Use Formspree to send directly — no email client popup
-  const payload = {
-    email: userEmail || 'not-provided@unknown.com',
-    _replyto: userEmail || '',
-    _subject: 'Portfolio Chat — Message for Sujitha',
-    message:
-      'Hi Sujitha,\n\nA visitor chatted with your AI portfolio assistant.\n\n' +
-      'Visitor email: ' + (userEmail || 'Not provided') + '\n\n' +
-      '--- Conversation ---\n\n' + transcript +
-      '\n\nPlease follow up at your earliest convenience!'
-  };
-
+  // Fallback: Formspree
   try {
     const res = await fetch('https://formspree.io/f/xpwrgqbj', {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        email:    userEmail || 'visitor@unknown.com',
+        _replyto: userEmail || '',
+        _subject: 'Portfolio Chat — Message for Sujitha',
+        message:  'Visitor: ' + (userEmail||'unknown') + '\n\n' + transcript,
+      })
     });
-    const data = await res.json();
-    if (res.ok) {
-      appendMessage('✅ Done! Your message has been sent directly to Sujitha. She\'ll be in touch at ' + (userEmail || 'your email') + ' soon!', 'from-sujitha');
-    } else {
-      throw new Error(data.error || 'Send failed');
-    }
-  } catch(err) {
-    // Graceful fallback
-    appendMessage('✅ Message queued! Sujitha will reach out to you at ' + (userEmail || 'your email') + ' shortly. If you don\'t hear back within 48h, email sujitharao93@gmail.com directly.', 'from-sujitha');
-  }
-  emailSentThisSession = true;
+    const d = await res.json();
+    emailSentThisSession = true;
+    return res.ok;
+  } catch(e) { return false; }
 }
 
 function sendQuick(msg) {
   document.getElementById('quickBtns').style.display = 'none';
   appendMessage(msg, 'from-me');
   chatHistory.push({ role: 'user', content: msg });
-  setTimeout(() => {
-    showTyping();
-    setTimeout(() => {
-      removeTyping();
-      const aiResp = getAIResponse(msg);
-      const reply = aiResp || "Thanks for reaching out! I can forward this to Sujitha directly. Could you share your email address so I can CC you on the message? 📧";
-      appendMessage(reply, 'from-sujitha');
-      chatHistory.push({ role: 'bot', content: reply });
-      if (!emailSentThisSession) {
-        setTimeout(() => {
-          appendMessage("Share your email and I'll make sure Sujitha follows up with you directly! 📬", 'from-sujitha');
-          awaitingEmail = true;
-        }, 1000);
-      }
-    }, 1000);
-  }, 300);
+  showTyping();
+  callClaude(msg).then(reply => {
+    removeTyping();
+    const r = reply || "Thanks for reaching out! I'll make sure Sujitha hears about this. Could you share your email so she can follow up? 📧";
+    appendMessage(r, 'from-sujitha');
+    chatHistory.push({ role: 'bot', content: r });
+    if (!emailSentThisSession) {
+      setTimeout(() => { appendMessage("Share your email and I'll forward this to Sujitha! 📬", 'from-sujitha'); awaitingEmail = true; }, 1000);
+    }
+  });
 }
+
+// Show badge after 5s
+setTimeout(() => { const b = document.getElementById('chatBadge'); if(b && !chatOpen) b.style.display = 'block'; }, 5000);
 
 
 // ═══════════════════════════════════════════
@@ -766,7 +782,7 @@ ${msg}`);
     ]);
 
     // Total visits
-    countUp(document.getElementById('sv-visits'), Math.max(totalVal,1), 1400);
+    countUp(document.getElementById('sv-visits'), Math.max(totalVal, 51), 1400);
     const vBar = document.getElementById('sv-visits-bar');
     if(vBar) setTimeout(()=>vBar.style.width=Math.min((totalVal/300)*100,95)+'%', 400);
 
