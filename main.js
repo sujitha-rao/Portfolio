@@ -278,37 +278,33 @@ setTimeout(hideLoader, 3500);
 
 
 // ═══════════════════════════════════════════
-// CURSOR — always visible on desktop, hidden on touch
+// CURSOR
 // ═══════════════════════════════════════════
 const cur  = document.getElementById('cursor');
 const ring = document.getElementById('cursorRing');
-let rx = window.innerWidth/2, ry = window.innerHeight/2;
-let mx = rx, my = ry;
-
-// Place at center on load
-if (cur)  { cur.style.left = mx+'px'; cur.style.top = my+'px'; }
-if (ring) { ring.style.left=rx+'px'; ring.style.top=ry+'px'; }
+let mx = -999, my = -999, rx = -999, ry = -999;
 
 document.addEventListener('mousemove', e => {
   mx = e.clientX; my = e.clientY;
-  if (cur)  { cur.style.left=mx+'px'; cur.style.top=my+'px'; }
+  if (cur)  { cur.style.left = mx + 'px'; cur.style.top = my + 'px'; }
 });
 
 (function animRing() {
-  rx += (mx-rx)*0.13; ry += (my-ry)*0.13;
-  if (ring) { ring.style.left=rx+'px'; ring.style.top=ry+'px'; }
+  rx += (mx - rx) * 0.13;
+  ry += (my - ry) * 0.13;
+  if (ring) { ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; }
   requestAnimationFrame(animRing);
 })();
 
-document.addEventListener('mousedown', ()=>document.body.classList.add('clicking'));
-document.addEventListener('mouseup',   ()=>document.body.classList.remove('clicking'));
+document.addEventListener('mousedown', () => document.body.classList.add('clicking'));
+document.addEventListener('mouseup',   () => document.body.classList.remove('clicking'));
 
-// Hover grow
 function attachCursorHovers() {
-  document.querySelectorAll('a,button,.skill-pill,.cert-badge,.edu-card,.project-card,.postit,.stat-card,.social-chip,.chat-quick,.testimonial-card,.mpi-card,.sv-card,.photo-wrap,[onclick]').forEach(el=>{
-    if(el.dataset.ch) return; el.dataset.ch='1';
-    el.addEventListener('mouseenter',()=>{if(cur)cur.classList.add('hover');if(ring)ring.classList.add('hover');});
-    el.addEventListener('mouseleave',()=>{if(cur)cur.classList.remove('hover');if(ring)ring.classList.remove('hover');});
+  document.querySelectorAll('a,button,.skill-pill,.cert-badge,.edu-card,.project-card,.postit,.stat-card,.social-chip,.chat-quick,.testimonial-card,.mpi-card,.sv-card,.photo-wrap,[onclick]').forEach(el => {
+    if (el.dataset.ch) return;
+    el.dataset.ch = '1';
+    el.addEventListener('mouseenter', () => { if(cur) cur.classList.add('hover'); if(ring) ring.classList.add('hover'); });
+    el.addEventListener('mouseleave', () => { if(cur) cur.classList.remove('hover'); if(ring) ring.classList.remove('hover'); });
   });
 }
 attachCursorHovers();
@@ -755,18 +751,18 @@ ${msg}`);
     if(rendered) return;
     rendered = true;
 
-    // Increment total + source counter
-    const [totalVal] = await Promise.all([
+    // Increment total AND source simultaneously, capture returned values
+    const [totalVal, srcVal] = await Promise.all([
       hitCount(NS+'/total'),
       hitCount(SRC_KEYS[source]),
     ]);
 
-    // Get all source counts
+    // Get all source counts (already incremented above for current source)
     const [li,gh,di,ot] = await Promise.all([
-      getCount(SRC_KEYS.linkedin),
-      getCount(SRC_KEYS.github),
-      getCount(SRC_KEYS.direct),
-      getCount(SRC_KEYS.other),
+      source==='linkedin' ? Promise.resolve(srcVal) : getCount(SRC_KEYS.linkedin),
+      source==='github'   ? Promise.resolve(srcVal) : getCount(SRC_KEYS.github),
+      source==='direct'   ? Promise.resolve(srcVal) : getCount(SRC_KEYS.direct),
+      source==='other'    ? Promise.resolve(srcVal) : getCount(SRC_KEYS.other),
     ]);
 
     // Total visits
@@ -775,12 +771,14 @@ ${msg}`);
     if(vBar) setTimeout(()=>vBar.style.width=Math.min((totalVal/300)*100,95)+'%', 400);
 
     // Source word cloud
-    const srcWords = [
-      {text:'LinkedIn',  count:li},
-      {text:'Direct',    count:di},
-      {text:'GitHub',    count:gh},
-      {text:'Other',     count:ot},
-    ].sort((a,b)=>b.count-a.count).filter(w=>w.count>0);
+    const rawSrc = [
+      {text:'LinkedIn',  count:li||0},
+      {text:'Direct',    count:di||0},
+      {text:'GitHub',    count:gh||0},
+      {text:'Other',     count:ot||0},
+    ].sort((a,b)=>b.count-a.count);
+    // Always show all four, even if count is 0 (use minimum size 1 for display)
+    const srcWords = rawSrc.map(w=>({...w, count: Math.max(w.count,1)}));
     setTimeout(()=>renderCloud('sv-source-cloud', srcWords), 600);
 
     // Location: get current visitor location, use to increment city counter
@@ -815,7 +813,12 @@ ${msg}`);
     if(loc&&loc.city&&!CITY_KEYS.includes(loc.city)){
       topCities.unshift({text:loc.city,count:1});
     }
-    if(!topCities.length) topCities.push({text:'Gathering…',count:1});
+    // Ensure we always have a visible cloud — pad with base cities at count=1
+    const baseCities = ['Atlanta','New York','London','San Francisco','Bangalore'];
+    baseCities.forEach(city => {
+      if (!topCities.find(c=>c.text===city)) topCities.push({text:city, count:1});
+    });
+    topCities.sort((a,b)=>b.count-a.count);
     setTimeout(()=>renderCloud('sv-location-cloud', topCities), 800);
 
     // Footer
