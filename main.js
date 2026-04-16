@@ -617,36 +617,34 @@ async function doSendEmail() {
     .map(m => (m.role === 'user' ? 'Visitor: ' : 'Sujitha AI: ') + m.content)
     .join('\n\n');
 
-  // Web3Forms — free, no domain restriction, no credit card
-  // Get your free access key at https://web3forms.com (just enter email)
-  const WEB3FORMS_KEY = '2ae25753-067a-4ced-9f16-d72985b4a4ac'; 
-
+  // FormSubmit.co — FREE, no API key, no domain restriction
+  // NOTE: First submission triggers an activation email to sujitharao93@gmail.com
+  //       Click the activation link once — then all future submissions arrive instantly.
   try {
-    const res = await fetch('https://api.web3forms.com/submit', {
+    const res = await fetch('https://formsubmit.co/ajax/sujitharao93@gmail.com', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
-        access_key:  WEB3FORMS_KEY,
-        subject:     'Portfolio Chat — Message for Sujitha',
-        from_name:   'Sujitha Portfolio Bot',
-        email:       userEmail || 'visitor@unknown.com',
-        replyto:     userEmail || 'sujitharao93@gmail.com',
-        message:     'Visitor email: ' + (userEmail || 'not provided') +
-                     '\n\n--- Chat Transcript ---\n\n' + transcript,
+        _subject:  'Portfolio Chat — Message from ' + (userEmail || 'a visitor'),
+        _template: 'box',
+        _replyto:  userEmail || 'sujitharao93@gmail.com',
+        _cc:       userEmail || '',
+        name:      'Portfolio AI Bot',
+        email:     userEmail || 'visitor@portfolio.com',
+        message:   'Visitor email: ' + (userEmail || 'not provided') +
+                   '\n\n--- Chat Transcript ---\n\n' + transcript,
       }),
     });
     const d = await res.json();
-    if (d.success) { emailSentThisSession = true; return true; }
-  } catch(e) {}
+    if (d.success === 'true' || d.success === true) {
+      emailSentThisSession = true;
+      return true;
+    }
+    console.log('FormSubmit response:', d);
+  } catch(e) { console.log('FormSubmit error:', e); }
 
-  // Hard fallback — open mail client
-  const body = encodeURIComponent(
-    'Hi Sujitha,\n\nA visitor reached out via your portfolio.\n\n' +
-    'Visitor email: ' + (userEmail || 'not provided') + '\n\n' + transcript
-  );
-  window.location.href = 'mailto:sujitharao93@gmail.com?subject=Portfolio+Chat&body=' + body;
   emailSentThisSession = true;
-  return true;
+  return false;
 }
 
 function sendQuick(msg) {
@@ -799,7 +797,7 @@ ${msg}`);
     ]);
 
     // Total visits
-    countUp(document.getElementById('sv-visits'), Math.max(totalVal, 51), 1400);
+    countUp(document.getElementById('sv-visits'), 50 + (totalVal || 1), 1400);
     const vBar = document.getElementById('sv-visits-bar');
     if(vBar) setTimeout(()=>vBar.style.width=Math.min((totalVal/300)*100,95)+'%', 400);
 
@@ -822,8 +820,14 @@ ${msg}`);
       if(locEl)  locEl.textContent  = loc.city;
       if(locSub) locSub.textContent = (loc.region||'') + (loc.country ? ', '+loc.country : '');
       // Increment that city's counter
-      const cityKey = NS+'/city-'+loc.city.replace(/\s+/g,'-').toLowerCase();
+      const safeCity = loc.city.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase().slice(0,30);
+      const cityKey = NS + '/city-' + safeCity;
       hitCount(cityKey);
+      try {
+        const sc = JSON.parse(localStorage.getItem('ssr_cities')||'[]');
+        if (!sc.includes(loc.city)) sc.push(loc.city);
+        localStorage.setItem('ssr_cities', JSON.stringify(sc.slice(-50)));
+      } catch(e) {}
     } else {
       if(locEl)  locEl.textContent  = 'Private';
       if(locSub) locSub.textContent = 'Location not available';
@@ -836,23 +840,30 @@ ${msg}`);
     if(srcEl)  srcEl.textContent  = srcLabel[source];
     if(srcSub) srcSub.textContent = document.referrer ? new URL(document.referrer).hostname : 'No referrer';
 
-    // Location word cloud: show top tracked cities using our known keys
-    const cityFetches = CITY_KEYS.map(city=>
-      getCount(NS+'/city-'+city.replace(/\s+/g,'-').toLowerCase()).then(count=>({text:city,count}))
-    );
-    const cityData = await Promise.all(cityFetches);
-    const topCities = cityData.filter(c=>c.count>0).sort((a,b)=>b.count-a.count);
-    // Add current city if not tracked
-    if(loc&&loc.city&&!CITY_KEYS.includes(loc.city)){
-      topCities.unshift({text:loc.city,count:1});
-    }
-    // Ensure we always have a visible cloud — pad with base cities at count=1
-    const baseCities = ['Atlanta','New York','London','San Francisco','Bangalore'];
-    baseCities.forEach(city => {
-      if (!topCities.find(c=>c.text===city)) topCities.push({text:city, count:1});
+    // Location word cloud — real cities only, from CountAPI + localStorage
+    let allCities = [...CITY_KEYS];
+    try {
+      JSON.parse(localStorage.getItem('ssr_cities')||'[]').forEach(city => {
+        if (!allCities.includes(city)) allCities.push(city);
+      });
+    } catch(e) {}
+    if (loc && loc.city && !allCities.includes(loc.city)) allCities.push(loc.city);
+
+    const cityFetches = allCities.map(city => {
+      const safe = city.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase().slice(0,30);
+      return getCount(NS+'/city-'+safe).then(count => ({text:city, count: count||0}));
     });
-    topCities.sort((a,b)=>b.count-a.count);
-    setTimeout(()=>renderCloud('sv-location-cloud', topCities), 800);
+    const cityData = await Promise.all(cityFetches);
+    let topCities = cityData.filter(c=>c.count>0).sort((a,b)=>b.count-a.count);
+    // Always include current visitor's city
+    if (loc && loc.city) {
+      const existing = topCities.find(c=>c.text===loc.city);
+      if (existing) existing.count = Math.max(existing.count,1);
+      else topCities.unshift({text:loc.city, count:1});
+      topCities.sort((a,b)=>b.count-a.count);
+    }
+    if (!topCities.length) topCities = [{text: loc&&loc.city ? loc.city : 'Gathering…', count:1}];
+    setTimeout(()=>renderCloud('sv-location-cloud', topCities), 800);s), 800);
 
     // Footer
     const ft = document.getElementById('sv-footer');
@@ -873,7 +884,7 @@ ${msg}`);
       // Update visit counter if section already rendered
       const el = document.getElementById('sv-visits');
       if (el && el.textContent !== '—') {
-        el.textContent = String(Math.max(total, 51));
+        el.textContent = String(50 + (total || 1));
       }
     } catch(e) {}
   })();
