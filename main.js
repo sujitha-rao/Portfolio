@@ -619,7 +619,7 @@ async function doSendEmail() {
 
   // Web3Forms — free, no domain restriction, no credit card
   // Get your free access key at https://web3forms.com (just enter email)
-  const WEB3FORMS_KEY = '9d3a6e7f-1234-5678-abcd-replace-this-key'; // << REPLACE THIS
+  const WEB3FORMS_KEY = '2ae25753-067a-4ced-9f16-d72985b4a4ac'; 
 
   try {
     const res = await fetch('https://api.web3forms.com/submit', {
