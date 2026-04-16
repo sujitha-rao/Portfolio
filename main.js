@@ -477,27 +477,26 @@ Key facts:
 
 If someone asks about something you don't know, say you'll make sure Sujitha gets their message. Always stay positive about Sujitha. If asked about salary/compensation, suggest reaching out directly.`;
 
+// ── Worker URL: set this after deploying to Cloudflare ──────────
+// See worker/DEPLOY.md for setup instructions (5 min, free)
+const WORKER_URL = 'https://sujitha-portfolio.REPLACE_WITH_YOUR_USERNAME.workers.dev';
+
 async function callClaude(userMessage) {
-  // Build conversation for API
   const messages = chatHistory
     .filter(m => m.role === 'user' || m.role === 'assistant')
-    .slice(-6) // last 3 exchanges
+    .slice(-6)
     .map(m => ({ role: m.role === 'bot' ? 'assistant' : m.role, content: m.content }));
   messages.push({ role: 'user', content: userMessage });
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(WORKER_URL + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        system: SYSTEM_PROMPT,
-        messages
-      })
+      body: JSON.stringify({ messages })
     });
+    if (!res.ok) return null;
     const data = await res.json();
-    return data?.content?.[0]?.text || null;
+    return data?.reply || null;
   } catch(e) {
     return null;
   }
@@ -592,39 +591,28 @@ async function doSendEmail() {
   const transcript = chatHistory
     .map(m => (m.role === 'user' ? 'Visitor: ' : 'Sujitha AI: ') + m.content)
     .join('\n\n');
-  
-  // Use EmailJS with Sujitha's service
+
+  // Primary: Cloudflare Worker → Resend
   try {
-    if (typeof emailjs !== 'undefined') {
-      emailjs.init('YOUR_EMAILJS_PUBLIC_KEY'); // will be replaced
-      await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
-        to_email:    'sujitharao93@gmail.com',
-        from_email:  userEmail || 'visitor@unknown.com',
-        reply_to:    userEmail || '',
-        subject:     'Portfolio Chat — Message for Sujitha',
-        message:     'Visitor email: ' + (userEmail||'unknown') + '\n\n' + transcript,
-      });
-      emailSentThisSession = true;
-      return true;
+    const res = await fetch(WORKER_URL + '/api/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorEmail: userEmail, transcript })
+    });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.ok) { emailSentThisSession = true; return true; }
     }
   } catch(e) {}
 
-  // Fallback: Formspree
-  try {
-    const res = await fetch('https://formspree.io/f/xpwrgqbj', {
-      method: 'POST',
-      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email:    userEmail || 'visitor@unknown.com',
-        _replyto: userEmail || '',
-        _subject: 'Portfolio Chat — Message for Sujitha',
-        message:  'Visitor: ' + (userEmail||'unknown') + '\n\n' + transcript,
-      })
-    });
-    const d = await res.json();
-    emailSentThisSession = true;
-    return res.ok;
-  } catch(e) { return false; }
+  // Fallback: open mail client
+  const body = encodeURIComponent(
+    'Hi Sujitha,\n\nA visitor reached out via your portfolio.\n\n' +
+    'Visitor email: ' + (userEmail||'not provided') + '\n\n' + transcript
+  );
+  window.location.href = 'mailto:sujitharao93@gmail.com?subject=Portfolio+Chat&body=' + body;
+  emailSentThisSession = true;
+  return true;
 }
 
 function sendQuick(msg) {
