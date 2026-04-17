@@ -678,13 +678,10 @@ ${msg}`);
 
 // ═══════════════════════════════════════════
 // PORTFOLIO COLLECTIVE ANALYTICS
-// localStorage-based — no external API, starts at 51, persists per device
+// Counts every page load. Location stored per unique city.
 // ═══════════════════════════════════════════
 (function() {
-  const STORE = 'ssr_v5';
-  const TODAY = new Date().toDateString();
-  const NEW_SESSION = !sessionStorage.getItem('ssr_s_' + TODAY);
-  if (NEW_SESSION) sessionStorage.setItem('ssr_s_' + TODAY, '1');
+  const STORE = 'ssr_v6';
 
   let d;
   try { d = JSON.parse(localStorage.getItem(STORE)) || {}; } catch(e) { d = {}; }
@@ -693,6 +690,7 @@ ${msg}`);
   d.cities   = d.cities   || {};
   d.cityList = d.cityList || [];
 
+  // Increment on EVERY page load (including refresh)
   function src() {
     const r = document.referrer || '';
     if (/linkedin/i.test(r)) return 'linkedin';
@@ -701,12 +699,9 @@ ${msg}`);
     return 'other';
   }
   const source = src();
-
-  if (NEW_SESSION) {
-    d.visits++;
-    d.sources[source] = (d.sources[source] || 0) + 1;
-    try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
-  }
+  d.visits++;
+  d.sources[source] = (d.sources[source] || 0) + 1;
+  try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
 
   async function getLocation() {
     try { const r = await fetch('https://ipinfo.io/json'); return r.ok ? r.json() : null; }
@@ -738,12 +733,12 @@ ${msg}`);
       const idx  = Math.min(i, sizes.length-1);
       const sz   = Math.max(sizes[idx] * Math.sqrt(w.count/max), 0.7).toFixed(2);
       const op   = ops[idx];
-      const rot  = (Math.random()-0.5) * 10;
+      const rot  = (Math.random()-0.5)*10;
       const span = document.createElement('span');
       span.textContent = w.text;
-      span.style.cssText = 'font-family:var(--serif);font-size:'+sz+'rem;color:rgba(255,255,255,'+op+');display:inline-block;transform:rotate('+rot+'deg);line-height:1.4;padding:0 .2rem;cursor:default;transition:transform .2s,opacity .2s';
+      span.style.cssText = 'font-family:var(--serif);font-size:'+sz+'rem;color:rgba(255,255,255,'+op+');display:inline-block;transform:rotate('+rot+'deg);line-height:1.5;padding:0 .25rem;cursor:default;transition:transform .2s,opacity .2s';
       span.onmouseenter = () => { span.style.opacity='1'; span.style.transform='rotate(0deg) scale(1.15)'; };
-      span.onmouseleave = () => { span.style.opacity=op; span.style.transform='rotate('+rot+'deg)'; };
+      span.onmouseleave = () => { span.style.opacity=String(op); span.style.transform='rotate('+rot+'deg)'; };
       el.appendChild(span);
     });
   }
@@ -765,54 +760,54 @@ ${msg}`);
     const srcSub = document.getElementById('sv-source-sub');
     const srcMap = {linkedin:'LinkedIn', github:'GitHub', direct:'Direct link', other:'Web / Other'};
     if (srcEl)  srcEl.textContent  = srcMap[source] || 'Unknown';
-    if (srcSub) srcSub.textContent = document.referrer ? (() => { try { return new URL(document.referrer).hostname; } catch(e) { return document.referrer; } })() : 'No referrer';
+    if (srcSub) {
+      try { srcSub.textContent = document.referrer ? new URL(document.referrer).hostname : 'No referrer'; }
+      catch(e) { srcSub.textContent = document.referrer || 'No referrer'; }
+    }
 
-    // Traffic source word cloud — always show all 4
+    // Traffic source word cloud — all 4 always shown
     const srcLabels = {linkedin:'LinkedIn', github:'GitHub', direct:'Direct', other:'Other'};
+    const srcMax = Math.max(...Object.values(d.sources), 1);
     const srcWords = ['linkedin','github','direct','other']
       .map(k => ({ text: srcLabels[k], count: d.sources[k] || 0 }))
+      .map(w => ({ ...w, count: w.count === 0 ? srcMax*0.15 : w.count }))
       .sort((a,b) => b.count - a.count);
-    // Give zero-count sources a tiny weight so they still appear
-    const maxSrc = Math.max(...srcWords.map(w=>w.count), 1);
-    srcWords.forEach(w => { if (w.count === 0) w.count = maxSrc * 0.15; });
     setTimeout(()=>renderCloud('sv-source-cloud', srcWords), 400);
 
-    // Location via ipinfo
+    // Location — fetch on EVERY load, always store city
     const loc = await getLocation();
     if (loc && loc.city) {
       const locEl  = document.getElementById('sv-location');
       const locSub = document.getElementById('sv-location-sub');
       if (locEl)  locEl.textContent  = loc.city;
-      if (locSub) locSub.textContent = (loc.region || '') + (loc.country ? ', ' + loc.country : '');
+      if (locSub) locSub.textContent = (loc.region||'') + (loc.country ? ', '+loc.country : '');
 
-      // Store city
-      if (NEW_SESSION) {
-        d.cities[loc.city] = (d.cities[loc.city] || 0) + 1;
-        if (!d.cityList.includes(loc.city)) d.cityList.push(loc.city);
-        try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
-      }
+      // Always increment this city's count on every page load
+      d.cities[loc.city] = (d.cities[loc.city] || 0) + 1;
+      if (!d.cityList.includes(loc.city)) d.cityList.unshift(loc.city);
+      try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
     } else {
       const el = document.getElementById('sv-location');
-      if (el) el.textContent = 'Private';
+      if (el) { el.textContent = 'Private'; el.style.fontSize='1.1rem'; }
     }
 
-    // Location word cloud — only real visited cities
+    // Location word cloud — real visited cities only, sorted by visit count
     const cityWords = d.cityList
       .map(city => ({ text: city, count: d.cities[city] || 1 }))
       .sort((a,b) => b.count - a.count)
-      .slice(0, 18);
-    if (!cityWords.length) cityWords.push({ text: loc && loc.city ? loc.city : 'Gathering…', count: 1 });
+      .slice(0, 20);
+    if (!cityWords.length) cityWords.push({ text: loc&&loc.city ? loc.city : 'Gathering…', count:1 });
     setTimeout(()=>renderCloud('sv-location-cloud', cityWords), 600);
 
     const ft = document.getElementById('sv-footer');
-    if (ft) ft.textContent = 'Analytics stored per device · Updates on each new visit';
+    if (ft) ft.textContent = 'Analytics stored locally · Counts every page load';
   }
 
   if (section) {
-    new IntersectionObserver(e => { if (e[0].isIntersecting) render(); }, {threshold:0.1}).observe(section);
+    new IntersectionObserver(e => { if(e[0].isIntersecting) render(); }, {threshold:0.1}).observe(section);
   }
 
-  // Show count immediately if counter already on screen
+  // Update counter immediately if already visible
   const el = document.getElementById('sv-visits');
   if (el && el.textContent === '—') el.textContent = String(d.visits);
 })();
