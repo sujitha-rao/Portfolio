@@ -477,55 +477,31 @@ Key facts:
 
 If someone asks about something you don't know, say you'll make sure Sujitha gets their message. Always stay positive about Sujitha. If asked about salary/compensation, suggest reaching out directly.`;
 
-// ── Smart Knowledge Base (no API key needed) ─────────────────
-const KB_ANSWERS = {
-  'experience|years|background|career':
-    "Sujitha has 9+ years of enterprise software engineering experience across SAP Concur (2022-2024), SAP SuccessFactors/SAP Labs (2020-2022), and Unisys (2015-2020). She's a certified SAP BTP Solution Architect based in Atlanta, GA.",
-  'sap|btp|concur|successfactors|hcm|odata|s4|hana':
-    "SAP is Sujitha's deep expertise — SAP BTP, Concur, SuccessFactors HCM, S/4HANA, Cloud Foundry, Integration Suite, API Management. She's a certified SAP BTP Solution Architect (2026) and has delivered solutions for Fortune 500 companies.",
-  'java|spring|backend|microservice|api':
-    "Java is Sujitha's primary language — Java 8+ with Spring Boot, JUnit, Mockito, REST APIs, and microservices. She has 9+ years of enterprise Java development building scalable, production-grade systems.",
-  'aws|cloud|kubernetes|eks|kafka|docker':
-    "Sujitha built a 2M+ records/hour data pipeline on AWS (EKS, Kafka, S3) at SAP Concur with a 40% reliability improvement. She's expert in Kubernetes, Docker, CI/CD, Helm, and cloud-native architecture.",
-  'certification|certified|credly':
-    "Sujitha holds 4 certifications: SAP BTP Solution Architect (2026), DevOps Professional from PagerDuty (2026), IBM Certified AI Developer (2025), and Gen AI for Software Dev from DeepLearning.AI (2025). Verify at credly.com/users/sujitha-suresh-rao.",
-  'georgia tech|omscs|ms|masters|education':
-    "Sujitha is pursuing her MS in Computer Science at Georgia Tech (OMSCS, part-time, started Jan 2026) — one of the top CS programs globally. She completed her B.Tech in CSE with 3.9/4.0 GPA from Model Engineering College, India.",
-  'devops|ci|cd|jenkins|github actions|terraform|helm':
-    "Sujitha is experienced in CI/CD pipelines (Jenkins, GitHub Actions), Terraform, Helm, CloudFormation, AWS CodeBuild, and Artifactory. She's PagerDuty DevOps certified (2026) and champions automated testing cultures.",
-  'ai|machine learning|ml|artificial intelligence|ibm':
-    "Sujitha holds an IBM Certified AI Developer (2025) and Gen AI for Software Development certification from DeepLearning.AI (2025). She's exploring AI/ML applications in her Georgia Tech OMSCS program.",
-  'available|hire|job|role|opportunity|position|open|recruit':
-    "Sujitha is open to conversations about senior Software Engineering roles, especially in Java, cloud-native, and SAP ecosystem areas. She's based in Atlanta, GA and pursuing her Georgia Tech MS part-time — fully available for full-time positions. Reach her at sujitharao93@gmail.com or via LinkedIn.",
-  'salary|compensation|rate|pay':
-    "For compensation discussions, I'd suggest reaching out directly to Sujitha at sujitharao93@gmail.com — she'll be happy to discuss. Want me to forward your message to her?",
-  'contact|email|reach|connect|linkedin':
-    "You can reach Sujitha at sujitharao93@gmail.com or on LinkedIn at linkedin.com/in/sujitha-rao. I can also forward your message directly — just share your email! 📧",
-  'project|pipeline|data|achievements':
-    "Key achievements: (1) Built a 2M+ records/hr data pipeline on AWS+Kafka+EKS at SAP Concur with 40% reliability boost. (2) Reduced production defects by 35% through automated testing at Unisys. (3) Delivered SuccessFactors HCM modules for global enterprise clients at SAP Labs.",
-  'location|atlanta|georgia|remote|relocation':
-    "Sujitha is based in Atlanta, Georgia. She's open to discussions about both local and remote opportunities.",
-  'collaborate|freelance|consult|side project':
-    "Sujitha is open to interesting engineering collaborations! Share more about your project and I'll forward it to her with your contact details.",
-};
+async function callClaude(userMessage) {
+  // Build conversation for API
+  const messages = chatHistory
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .slice(-6) // last 3 exchanges
+    .map(m => ({ role: m.role === 'bot' ? 'assistant' : m.role, content: m.content }));
+  messages.push({ role: 'user', content: userMessage });
 
-function callClaude(userMessage) {
-  const lower = userMessage.toLowerCase();
-  for (const [pattern, answer] of Object.entries(KB_ANSWERS)) {
-    if (pattern.split('|').some(kw => lower.includes(kw))) {
-      return Promise.resolve(answer);
-    }
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        system: SYSTEM_PROMPT,
+        messages
+      })
+    });
+    const data = await res.json();
+    return data?.content?.[0]?.text || null;
+  } catch(e) {
+    return null;
   }
-  // Generic friendly response
-  const generic = [
-    "That's a great question! I'll make sure Sujitha sees your message and gets back to you. Could you share your email so she can follow up directly? 📧",
-    "I want to make sure Sujitha hears this personally! Share your email and I'll forward your message to her right away. 📬",
-    "Great to hear from you! I may not have all the details on that, but Sujitha definitely will. Drop your email and she'll be in touch! 🙌",
-  ];
-  return Promise.resolve(generic[Math.floor(Math.random() * generic.length)]);
 }
-
-
 
 function toggleChat() {
   chatOpen = !chatOpen;
@@ -617,22 +593,24 @@ async function doSendEmail() {
     .map(m => (m.role === 'user' ? 'Visitor: ' : 'Sujitha AI: ') + m.content)
     .join('\n\n');
 
-  // FormSubmit.co — FREE, no API key, no domain restriction
-  // NOTE: First submission triggers an activation email to sujitharao93@gmail.com
-  //       Click the activation link once — then all future submissions arrive instantly.
+  // FormSubmit.co — free, no API key required.
+  // IMPORTANT: First-ever submission sends an activation email to sujitharao93@gmail.com.
+  // Click the activation link ONCE — then all future emails are delivered automatically.
+  // The visitor is automatically CC'd so they get a copy too.
   try {
     const res = await fetch('https://formsubmit.co/ajax/sujitharao93@gmail.com', {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
-        _subject:  'Portfolio Chat — Message from ' + (userEmail || 'a visitor'),
-        _template: 'box',
-        _replyto:  userEmail || 'sujitharao93@gmail.com',
-        _cc:       userEmail || '',
-        name:      'Portfolio AI Bot',
-        email:     userEmail || 'visitor@portfolio.com',
-        message:   'Visitor email: ' + (userEmail || 'not provided') +
-                   '\n\n--- Chat Transcript ---\n\n' + transcript,
+        _subject:      'Portfolio Chat — Message from ' + (userEmail || 'a visitor'),
+        _template:     'box',
+        _replyto:      userEmail || '',
+        _cc:           userEmail || '',
+        _autoresponse: 'Hi! Thanks for reaching out to Sujitha. She has received your message and will get back to you soon!',
+        name:          'Sujitha Portfolio Bot',
+        email:         userEmail || 'visitor@portfolio.com',
+        message:       '=== Chat Conversation ===\n\n' + transcript +
+                       '\n\n=== Visitor Email: ' + (userEmail || 'not provided') + ' ===',
       }),
     });
     const d = await res.json();
@@ -640,8 +618,7 @@ async function doSendEmail() {
       emailSentThisSession = true;
       return true;
     }
-    console.log('FormSubmit response:', d);
-  } catch(e) { console.log('FormSubmit error:', e); }
+  } catch(e) { console.error('Email send error:', e); }
 
   emailSentThisSession = true;
   return false;
@@ -701,192 +678,141 @@ ${msg}`);
 
 // ═══════════════════════════════════════════
 // PORTFOLIO COLLECTIVE ANALYTICS
-// CountAPI for persistent counters + ipinfo for location
+// localStorage-based — no external API, starts at 51, persists per device
 // ═══════════════════════════════════════════
 (function() {
-  const NS = 'ssr-portfolio-v3';
+  const STORE = 'ssr_v5';
+  const TODAY = new Date().toDateString();
+  const NEW_SESSION = !sessionStorage.getItem('ssr_s_' + TODAY);
+  if (NEW_SESSION) sessionStorage.setItem('ssr_s_' + TODAY, '1');
 
-  // Source keys
-  const SRC_KEYS = {
-    linkedin: NS+'/src-linkedin',
-    github:   NS+'/src-github',
-    direct:   NS+'/src-direct',
-    other:    NS+'/src-other',
-  };
-  // Location word-cloud: top cities tracked
-  const CITY_KEYS = ['Atlanta','San Francisco','New York','Seattle','London','Bangalore','Mumbai','Sydney','Toronto','Berlin','Chicago','Austin'];
+  let d;
+  try { d = JSON.parse(localStorage.getItem(STORE)) || {}; } catch(e) { d = {}; }
+  d.visits   = d.visits   || 51;
+  d.sources  = d.sources  || {};
+  d.cities   = d.cities   || {};
+  d.cityList = d.cityList || [];
 
-  function getSource() {
-    const r = document.referrer||'';
-    if(/linkedin/i.test(r)) return 'linkedin';
-    if(/github/i.test(r))   return 'github';
-    if(r==='')               return 'direct';
+  function src() {
+    const r = document.referrer || '';
+    if (/linkedin/i.test(r)) return 'linkedin';
+    if (/github/i.test(r))   return 'github';
+    if (r === '')             return 'direct';
     return 'other';
   }
-  const source = getSource();
+  const source = src();
 
-  async function hitCount(key) {
-    try { const r=await fetch(`https://api.countapi.xyz/hit/${key}`); return (await r.json()).value||0; } catch(e){return 0;}
+  if (NEW_SESSION) {
+    d.visits++;
+    d.sources[source] = (d.sources[source] || 0) + 1;
+    try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
   }
-  async function getCount(key) {
-    try { const r=await fetch(`https://api.countapi.xyz/get/${key}`); return (await r.json()).value||0; } catch(e){return 0;}
-  }
+
   async function getLocation() {
-    try { const r=await fetch('https://ipinfo.io/json'); return await r.json(); } catch(e){return null;}
+    try { const r = await fetch('https://ipinfo.io/json'); return r.ok ? r.json() : null; }
+    catch(e) { return null; }
   }
 
-  // Animated counter
   function countUp(el, target, dur) {
-    if(!el||!target) return;
-    const s=Date.now();
-    (function t(){
-      const p=Math.min((Date.now()-s)/dur,1), e=1-Math.pow(1-p,3);
-      el.textContent=Math.round(target*e).toLocaleString();
-      if(p<1) requestAnimationFrame(t);
+    if (!el) return;
+    const t0 = Date.now();
+    (function tick() {
+      const p = Math.min((Date.now()-t0)/dur, 1), e = 1-Math.pow(1-p,3);
+      el.textContent = Math.round(target*e).toLocaleString();
+      if (p < 1) requestAnimationFrame(tick);
     })();
   }
 
-  // Word cloud renderer
-  function renderCloud(containerId, words) {
-    // words = [{text, count}] sorted desc
-    const el = document.getElementById(containerId);
-    if(!el) return;
+  function renderCloud(id, words) {
+    const el = document.getElementById(id);
+    if (!el) return;
     el.innerHTML = '';
-    if(!words.length){ el.innerHTML='<span style="color:rgba(255,255,255,0.2);font-family:var(--mono);font-size:12px;">Gathering data…</span>'; return; }
-    const max = words[0].count || 1;
-    const sizes = [2.2,1.75,1.45,1.2,1.05,0.92,0.82,0.75];
-    const opacities = [1,.92,.82,.72,.65,.58,.52,.48];
-    words.slice(0,12).forEach((w,i)=>{
+    if (!words.length) {
+      el.innerHTML = '<span style="color:rgba(255,255,255,0.35);font-family:var(--mono);font-size:12px;">No data yet</span>';
+      return;
+    }
+    const max = Math.max(...words.map(w => w.count), 1);
+    const sizes = [2.2,1.8,1.5,1.25,1.05,0.9,0.8,0.72];
+    const ops   = [1.0,0.9,0.82,0.74,0.66,0.6,0.55,0.5];
+    words.forEach((w, i) => {
+      const idx  = Math.min(i, sizes.length-1);
+      const sz   = Math.max(sizes[idx] * Math.sqrt(w.count/max), 0.7).toFixed(2);
+      const op   = ops[idx];
+      const rot  = (Math.random()-0.5) * 10;
       const span = document.createElement('span');
-      const sz   = sizes[Math.min(i,sizes.length-1)];
-      const op   = opacities[Math.min(i,opacities.length-1)];
-      const rotate = (Math.random()-.5)*12; // subtle tilt
       span.textContent = w.text;
-      span.style.cssText = `
-        font-family:var(--serif);
-        font-size:${sz}rem;
-        color:rgba(255,255,255,${op});
-        display:inline-block;
-        transform:rotate(${rotate}deg);
-        line-height:1.3;
-        cursor:default;
-        transition:opacity .2s,transform .2s;
-        padding:0 .15rem;
-      `;
-      span.onmouseenter = ()=>{ span.style.opacity=1; span.style.transform=`rotate(0deg) scale(1.1)`; };
-      span.onmouseleave = ()=>{ span.style.opacity=op; span.style.transform=`rotate(${rotate}deg) scale(1)`; };
+      span.style.cssText = 'font-family:var(--serif);font-size:'+sz+'rem;color:rgba(255,255,255,'+op+');display:inline-block;transform:rotate('+rot+'deg);line-height:1.4;padding:0 .2rem;cursor:default;transition:transform .2s,opacity .2s';
+      span.onmouseenter = () => { span.style.opacity='1'; span.style.transform='rotate(0deg) scale(1.15)'; };
+      span.onmouseleave = () => { span.style.opacity=op; span.style.transform='rotate('+rot+'deg)'; };
       el.appendChild(span);
     });
   }
 
-  // ── Main ───────────────────────────────────
-  const statsSection = document.getElementById('stats-viewer');
+  const section = document.getElementById('stats-viewer');
   let rendered = false;
 
-  async function renderStats() {
-    if(rendered) return;
+  async function render() {
+    if (rendered) return;
     rendered = true;
 
-    // GET current counts (already incremented on page load above)
-    const [totalVal, li, gh, di, ot] = await Promise.all([
-      getCount(NS + '/total'),
-      getCount(SRC_KEYS.linkedin),
-      getCount(SRC_KEYS.github),
-      getCount(SRC_KEYS.direct),
-      getCount(SRC_KEYS.other),
-    ]);
-
-    // Total visits
-    countUp(document.getElementById('sv-visits'), 50 + (totalVal || 1), 1400);
+    // Visit counter
+    countUp(document.getElementById('sv-visits'), d.visits, 1100);
     const vBar = document.getElementById('sv-visits-bar');
-    if(vBar) setTimeout(()=>vBar.style.width=Math.min((totalVal/300)*100,95)+'%', 400);
-
-    // Source word cloud
-    const rawSrc = [
-      {text:'LinkedIn',  count:li||0},
-      {text:'Direct',    count:di||0},
-      {text:'GitHub',    count:gh||0},
-      {text:'Other',     count:ot||0},
-    ].sort((a,b)=>b.count-a.count);
-    // Always show all four, even if count is 0 (use minimum size 1 for display)
-    const srcWords = rawSrc.map(w=>({...w, count: Math.max(w.count,1)}));
-    setTimeout(()=>renderCloud('sv-source-cloud', srcWords), 600);
-
-    // Location: get current visitor location, use to increment city counter
-    const loc = await getLocation();
-    const locEl  = document.getElementById('sv-location');
-    const locSub = document.getElementById('sv-location-sub');
-    if(loc && loc.city) {
-      if(locEl)  locEl.textContent  = loc.city;
-      if(locSub) locSub.textContent = (loc.region||'') + (loc.country ? ', '+loc.country : '');
-      // Increment that city's counter
-      const safeCity = loc.city.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase().slice(0,30);
-      const cityKey = NS + '/city-' + safeCity;
-      hitCount(cityKey);
-      try {
-        const sc = JSON.parse(localStorage.getItem('ssr_cities')||'[]');
-        if (!sc.includes(loc.city)) sc.push(loc.city);
-        localStorage.setItem('ssr_cities', JSON.stringify(sc.slice(-50)));
-      } catch(e) {}
-    } else {
-      if(locEl)  locEl.textContent  = 'Private';
-      if(locSub) locSub.textContent = 'Location not available';
-    }
+    if (vBar) setTimeout(()=>{ vBar.style.width = Math.min((d.visits/300)*100, 95)+'%'; }, 350);
 
     // Source card
     const srcEl  = document.getElementById('sv-source');
     const srcSub = document.getElementById('sv-source-sub');
-    const srcLabel={linkedin:'LinkedIn',github:'GitHub',direct:'Direct',other:'Web/Other'};
-    if(srcEl)  srcEl.textContent  = srcLabel[source];
-    if(srcSub) srcSub.textContent = document.referrer ? new URL(document.referrer).hostname : 'No referrer';
+    const srcMap = {linkedin:'LinkedIn', github:'GitHub', direct:'Direct link', other:'Web / Other'};
+    if (srcEl)  srcEl.textContent  = srcMap[source] || 'Unknown';
+    if (srcSub) srcSub.textContent = document.referrer ? (() => { try { return new URL(document.referrer).hostname; } catch(e) { return document.referrer; } })() : 'No referrer';
 
-    // Location word cloud — real cities only, from CountAPI + localStorage
-    let allCities = [...CITY_KEYS];
-    try {
-      JSON.parse(localStorage.getItem('ssr_cities')||'[]').forEach(city => {
-        if (!allCities.includes(city)) allCities.push(city);
-      });
-    } catch(e) {}
-    if (loc && loc.city && !allCities.includes(loc.city)) allCities.push(loc.city);
+    // Traffic source word cloud — always show all 4
+    const srcLabels = {linkedin:'LinkedIn', github:'GitHub', direct:'Direct', other:'Other'};
+    const srcWords = ['linkedin','github','direct','other']
+      .map(k => ({ text: srcLabels[k], count: d.sources[k] || 0 }))
+      .sort((a,b) => b.count - a.count);
+    // Give zero-count sources a tiny weight so they still appear
+    const maxSrc = Math.max(...srcWords.map(w=>w.count), 1);
+    srcWords.forEach(w => { if (w.count === 0) w.count = maxSrc * 0.15; });
+    setTimeout(()=>renderCloud('sv-source-cloud', srcWords), 400);
 
-    const cityFetches = allCities.map(city => {
-      const safe = city.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase().slice(0,30);
-      return getCount(NS+'/city-'+safe).then(count => ({text:city, count: count||0}));
-    });
-    const cityData = await Promise.all(cityFetches);
-    let topCities = cityData.filter(c=>c.count>0).sort((a,b)=>b.count-a.count);
-    // Always include current visitor's city
+    // Location via ipinfo
+    const loc = await getLocation();
     if (loc && loc.city) {
-      const existing = topCities.find(c=>c.text===loc.city);
-      if (existing) existing.count = Math.max(existing.count,1);
-      else topCities.unshift({text:loc.city, count:1});
-      topCities.sort((a,b)=>b.count-a.count);
-    }
-    if (!topCities.length) topCities = [{text: loc&&loc.city ? loc.city : 'Gathering…', count:1}];
-    setTimeout(()=>renderCloud('sv-location-cloud', topCities), 800);s), 800);
+      const locEl  = document.getElementById('sv-location');
+      const locSub = document.getElementById('sv-location-sub');
+      if (locEl)  locEl.textContent  = loc.city;
+      if (locSub) locSub.textContent = (loc.region || '') + (loc.country ? ', ' + loc.country : '');
 
-    // Footer
-    const ft = document.getElementById('sv-footer');
-    if(ft) ft.textContent = 'Data collected via CountAPI & ipinfo.io • Refreshes on each visit';
-  }
-
-  if(statsSection){
-    const obs=new IntersectionObserver(e=>{if(e[0].isIntersecting) renderStats();},{threshold:0.1});
-    obs.observe(statsSection);
-  }
-})();  // ── Fire visit + source counter IMMEDIATELY on page load ────
-  (async function trackVisit() {
-    try {
-      const [total] = await Promise.all([
-        hitCount(NS + '/total'),
-        hitCount(SRC_KEYS[source]),
-      ]);
-      // Update visit counter if section already rendered
-      const el = document.getElementById('sv-visits');
-      if (el && el.textContent !== '—') {
-        el.textContent = String(50 + (total || 1));
+      // Store city
+      if (NEW_SESSION) {
+        d.cities[loc.city] = (d.cities[loc.city] || 0) + 1;
+        if (!d.cityList.includes(loc.city)) d.cityList.push(loc.city);
+        try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
       }
-    } catch(e) {}
-  })();
+    } else {
+      const el = document.getElementById('sv-location');
+      if (el) el.textContent = 'Private';
+    }
 
-  
+    // Location word cloud — only real visited cities
+    const cityWords = d.cityList
+      .map(city => ({ text: city, count: d.cities[city] || 1 }))
+      .sort((a,b) => b.count - a.count)
+      .slice(0, 18);
+    if (!cityWords.length) cityWords.push({ text: loc && loc.city ? loc.city : 'Gathering…', count: 1 });
+    setTimeout(()=>renderCloud('sv-location-cloud', cityWords), 600);
+
+    const ft = document.getElementById('sv-footer');
+    if (ft) ft.textContent = 'Analytics stored per device · Updates on each new visit';
+  }
+
+  if (section) {
+    new IntersectionObserver(e => { if (e[0].isIntersecting) render(); }, {threshold:0.1}).observe(section);
+  }
+
+  // Show count immediately if counter already on screen
+  const el = document.getElementById('sv-visits');
+  if (el && el.textContent === '—') el.textContent = String(d.visits);
+})();
