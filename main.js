@@ -304,7 +304,7 @@ setTimeout(hideLoader, 3500);
   document.addEventListener('mousedown', () => document.body.classList.add('clicking'));
   document.addEventListener('mouseup',   () => document.body.classList.remove('clicking'));
 
-  function bindHovers() {
+  function attachCursorHovers() {
     document.querySelectorAll(
       'a, button, [onclick], .skill-pill, .cert-badge, .project-card, ' +
       '.postit, .stat-card, .social-chip, .mpi-card, .sv-card, .photo-wrap, .testimonial-card'
@@ -315,8 +315,8 @@ setTimeout(hideLoader, 3500);
       el.addEventListener('mouseleave', () => { cur.classList.remove('hover'); ring.classList.remove('hover'); });
     });
   }
-  bindHovers();
-  setInterval(bindHovers, 3000);
+  attachCursorHovers();
+  setInterval(attachCursorHovers, 3000);
 })();
 
 
@@ -477,31 +477,49 @@ Key facts:
 
 If someone asks about something you don't know, say you'll make sure Sujitha gets their message. Always stay positive about Sujitha. If asked about salary/compensation, suggest reaching out directly.`;
 
-async function callClaude(userMessage) {
-  // Build conversation for API
-  const messages = chatHistory
-    .filter(m => m.role === 'user' || m.role === 'assistant')
-    .slice(-6) // last 3 exchanges
-    .map(m => ({ role: m.role === 'bot' ? 'assistant' : m.role, content: m.content }));
-  messages.push({ role: 'user', content: userMessage });
+async 
+// ── Local Knowledge Base — answers from Sujitha's profile ──────
+const KB = {
+  'experience|years|background|career|work':
+    "Sujitha has 9+ years of enterprise software engineering: SAP Concur (2022–2024), SAP SuccessFactors/SAP Labs (2020–2022), and Unisys (2015–2020). She's a certified SAP BTP Solution Architect based in Atlanta, GA.",
+  'sap|btp|concur|successfactors|hcm|odata|s4|hana|cloud foundry':
+    "SAP is Sujitha's deep expertise — BTP, Concur, SuccessFactors HCM, S/4HANA, Cloud Foundry, Integration Suite, API Management, SAP Joule, and SAP Build. Certified SAP BTP Solution Architect (2026).",
+  'java|spring|backend|microservice|api|rest':
+    "Java is Sujitha's primary language — Java 8+ with Spring Boot, JUnit, Mockito, REST/OData APIs, and microservices. 9+ years of enterprise Java development.",
+  'aws|cloud|kubernetes|eks|kafka|docker|devops|ci|cd|pipeline':
+    "Sujitha built a 2M+ records/hour pipeline on AWS (EKS, Kafka, S3) at SAP Concur with 40% reliability improvement. Expert in Kubernetes, Docker, Helm, CI/CD, Terraform, and GitHub Actions.",
+  'certification|certified|credly|ibm|pagerduty':
+    "4 certifications: SAP BTP Solution Architect (2026), PagerDuty DevOps (2026), IBM AI Developer (2025), Gen AI for Software Dev — DeepLearning.AI (2025). Verify at credly.com/users/sujitha-suresh-rao.",
+  'education|georgia tech|omscs|ms|masters|degree|gpa':
+    "Sujitha is pursuing her MS CS at Georgia Tech OMSCS (part-time, Jan 2026) — one of the world's top CS programs. B.Tech CSE with 3.9/4.0 GPA from Model Engineering College, India (2015).",
+  'hire|job|role|opportunity|position|open|recruit|available':
+    "Sujitha is open to senior Software Engineering conversations — especially Java, cloud-native, SAP ecosystems, and DevOps. Based in Atlanta, GA, pursuing Georgia Tech MS part-time, and fully available for full-time roles. Reach her at sujitharao93@gmail.com.",
+  'salary|compensation|rate|pay':
+    "For compensation discussions, I'd suggest reaching out directly to Sujitha at sujitharao93@gmail.com — she'll be happy to chat!",
+  'contact|email|reach|connect|linkedin':
+    "Email: sujitharao93@gmail.com — LinkedIn: linkedin.com/in/sujitha-rao. I can also forward your message directly — just share your email! 📧",
+  'project|pipeline|achievement|impact|result':
+    "Key achievements: (1) 2M+ records/hr AWS pipeline at SAP Concur (+40% reliability). (2) SuccessFactors HCM modules on SAP BTP. (3) SSL/X.509 validation at Unisys. (4) Hand Gesture Recognition (OpenCV/Python). (5) 35% defect reduction via automated testing.",
+  'ai|machine learning|ml|artificial intelligence|gen ai':
+    "IBM Certified AI Developer (2025), Gen AI for Software Development from DeepLearning.AI (2025). Exploring ML & Cloud Computing in her Georgia Tech OMSCS program.",
+  'location|atlanta|georgia|remote|relocation':
+    "Sujitha is based in Atlanta, Georgia, USA. Open to both local and remote opportunities.",
+  'hello|hi|hey|good morning|good afternoon':
+    "Hi there! 👋 I'm Sujitha's AI assistant. Ask me about her experience, skills, certifications, or projects — or leave a message and I'll make sure she gets it!",
+  'collaborate|freelance|consult|side project|partner':
+    "Sujitha is open to interesting engineering collaborations! Tell me more about what you have in mind.",
+};
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        system: SYSTEM_PROMPT,
-        messages
-      })
-    });
-    const data = await res.json();
-    return data?.content?.[0]?.text || null;
-  } catch(e) {
-    return null;
+function callClaude(userMessage) {
+  const lower = userMessage.toLowerCase();
+  for (const [pattern, answer] of Object.entries(KB)) {
+    if (pattern.split('|').some(kw => lower.includes(kw))) {
+      return Promise.resolve(answer);
+    }
   }
+  return Promise.resolve(null); // triggers email escalation
 }
+
 
 function toggleChat() {
   chatOpen = !chatOpen;
@@ -618,7 +636,7 @@ async function doSendEmail() {
       emailSentThisSession = true;
       return true;
     }
-  } catch(e) { console.error('Email send error:', e); }
+  } catch(e) {  }
 
   emailSentThisSession = true;
   return false;
@@ -647,6 +665,42 @@ setTimeout(() => { const b = document.getElementById('chatBadge'); if(b && !chat
 // ═══════════════════════════════════════════
 // TESTIMONIAL FORM
 // ═══════════════════════════════════════════
+
+// ═══════════════════════════════════════════
+// MOBILE POST-IT CAROUSEL
+// ═══════════════════════════════════════════
+function mpiFlip(card) {
+  card.classList.toggle('flipped');
+}
+
+function initMobileCarousel() {
+  const track = document.getElementById('mpiTrack');
+  const dotsEl = document.getElementById('mpiDots');
+  if (!track || !dotsEl) return;
+  const cards = track.querySelectorAll('.mpi-card');
+  if (!cards.length) return;
+  dotsEl.innerHTML = '';
+  cards.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'mpi-dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => cards[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    dotsEl.appendChild(d);
+  });
+  const dots = dotsEl.querySelectorAll('.mpi-dot');
+  track.addEventListener('scroll', () => {
+    requestAnimationFrame(() => {
+      const mid = track.scrollLeft + track.offsetWidth / 2;
+      let closest = 0, minDist = Infinity;
+      cards.forEach((card, i) => {
+        const dist = Math.abs(card.offsetLeft + card.offsetWidth/2 - mid);
+        if (dist < minDist) { minDist = dist; closest = i; }
+      });
+      dots.forEach((d, i) => d.classList.toggle('active', i === closest));
+    });
+  }, { passive: true });
+}
+window.addEventListener('load', initMobileCarousel);
+
 function submitTestimonial(e) {
   e.preventDefault();
   const name = document.getElementById('tName').value.trim();

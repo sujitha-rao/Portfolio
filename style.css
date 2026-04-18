@@ -284,7 +284,7 @@ section{padding:3.5rem 3rem;position:relative;z-index:1;}
 .timeline{position:relative;}
 .timeline::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,var(--teal),var(--teal-mid) 70%,transparent);}
 .timeline-dot{position:absolute;left:-4px;top:7px;width:9px;height:9px;border-radius:50%;background:var(--bg);border:1.5px solid var(--teal);transition:background .2s,transform .25s;}
-.timeline-item{position:relative;padding:0 0 3rem 2.5rem;}
+
 .timeline-item:hover .timeline-dot{background:var(--teal);transform:scale(1.5);}
 .exp-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.3rem;flex-wrap:wrap;gap:.4rem;}
 .exp-role{font-family:var(--serif);font-size:1.25rem;color:var(--ink);line-height:1.2;}
@@ -546,7 +546,7 @@ footer span{color:var(--teal);}
   .cert-issuer{font-size:12px;}
 
   /* ── Experience ── */
-  .timeline-item{padding-left:2rem;padding-bottom:2.2rem;}
+  
   .exp-role{font-size:1.2rem;}
   .exp-company{font-size:13px;}
   .exp-period{font-size:12px;}
