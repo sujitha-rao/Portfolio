@@ -758,8 +758,13 @@ ${msg}`);
   try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
 
   async function getLocation() {
-    try { const r = await fetch('https://ipinfo.io/json'); return r.ok ? r.json() : null; }
-    catch(e) { return null; }
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const r = await fetch('https://ipinfo.io/json', {signal: controller.signal});
+      clearTimeout(timer);
+      return r.ok ? r.json() : null;
+    } catch(e) { return null; }
   }
 
   function countUp(el, target, dur) {
@@ -858,10 +863,18 @@ ${msg}`);
   }
 
   if (section) {
-    new IntersectionObserver(e => { if(e[0].isIntersecting) render(); }, {threshold:0.1}).observe(section);
+    const _obs = new IntersectionObserver(e => { if(e[0].isIntersecting) render(); }, {threshold:0, rootMargin:'0px'});
+    _obs.observe(section);
+    // Fallback: render after 3s even if intersection never fires
+    setTimeout(() => render(), 3000);
   }
 
-  // Update counter immediately if already visible
+  // Show count immediately on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('sv-visits');
+    if (el) el.textContent = String(d.visits);
+  });
+  // Also update if DOM is already ready
   const el = document.getElementById('sv-visits');
-  if (el && el.textContent === '—') el.textContent = String(d.visits);
+  if (el) el.textContent = String(d.visits);
 })();
