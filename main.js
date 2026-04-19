@@ -731,150 +731,146 @@ ${msg}`);
 }
 
 // ═══════════════════════════════════════════
-// PORTFOLIO COLLECTIVE ANALYTICS
-// Counts every page load. Location stored per unique city.
+// PORTFOLIO ANALYTICS — runs on page load, no IntersectionObserver dependency
 // ═══════════════════════════════════════════
-(function() {
-  const STORE = 'ssr_v6';
+(function initAnalytics() {
+  const STORE = 'ssr_v7';
 
-  let d;
-  try { d = JSON.parse(localStorage.getItem(STORE)) || {}; } catch(e) { d = {}; }
-  d.visits   = d.visits   || 51;
-  d.sources  = d.sources  || {};
-  d.cities   = d.cities   || {};
-  d.cityList = d.cityList || [];
+  // Load or seed data
+  let d = {};
+  try { d = JSON.parse(localStorage.getItem(STORE)) || {}; } catch(e) {}
+  if (!d.visits)   d.visits   = 51;
+  if (!d.sources)  d.sources  = {};
+  if (!d.cities)   d.cities   = {};
+  if (!d.cityList) d.cityList = [];
 
-  // Increment on EVERY page load (including refresh)
-  function src() {
-    const r = document.referrer || '';
-    if (/linkedin/i.test(r)) return 'linkedin';
-    if (/github/i.test(r))   return 'github';
-    if (r === '')             return 'direct';
-    return 'other';
-  }
-  const source = src();
+  // Detect traffic source from referrer
+  const ref = document.referrer || '';
+  const source = /linkedin/i.test(ref) ? 'linkedin'
+               : /github/i.test(ref)   ? 'github'
+               : ref === ''             ? 'direct'
+               : 'other';
+
+  // Increment every page load
   d.visits++;
   d.sources[source] = (d.sources[source] || 0) + 1;
   try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
 
-  async function getLocation() {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-      const r = await fetch('https://ipinfo.io/json', {signal: controller.signal});
-      clearTimeout(timer);
-      return r.ok ? r.json() : null;
-    } catch(e) { return null; }
+  // ── Helpers ────────────────────────────────
+  function setEl(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
   }
 
-  function countUp(el, target, dur) {
+  function countUp(id, target, dur) {
+    const el = document.getElementById(id);
     if (!el) return;
     const t0 = Date.now();
     (function tick() {
-      const p = Math.min((Date.now()-t0)/dur, 1), e = 1-Math.pow(1-p,3);
-      el.textContent = Math.round(target*e).toLocaleString();
+      const p = Math.min((Date.now() - t0) / dur, 1);
+      const v = Math.round(target * (1 - Math.pow(1 - p, 3)));
+      el.textContent = v.toLocaleString();
       if (p < 1) requestAnimationFrame(tick);
     })();
   }
 
   function renderCloud(id, words) {
     const el = document.getElementById(id);
-    if (!el) return;
+    if (!el || !words.length) return;
     el.innerHTML = '';
-    if (!words.length) {
-      el.innerHTML = '<span style="color:rgba(255,255,255,0.35);font-family:var(--mono);font-size:12px;">No data yet</span>';
-      return;
-    }
-    const max = Math.max(...words.map(w => w.count), 1);
-    const sizes = [2.2,1.8,1.5,1.25,1.05,0.9,0.8,0.72];
-    const ops   = [1.0,0.9,0.82,0.74,0.66,0.6,0.55,0.5];
+    const max  = Math.max(...words.map(w => w.count), 1);
+    const SIZE = [2.2, 1.8, 1.5, 1.25, 1.05, 0.9, 0.8, 0.72];
+    const OPA  = [1.0, 0.9, 0.82, 0.74, 0.66, 0.6, 0.55, 0.5];
     words.forEach((w, i) => {
-      const idx  = Math.min(i, sizes.length-1);
-      const sz   = Math.max(sizes[idx] * Math.sqrt(w.count/max), 0.7).toFixed(2);
-      const op   = ops[idx];
-      const rot  = (Math.random()-0.5)*10;
-      const span = document.createElement('span');
-      span.textContent = w.text;
-      span.style.cssText = 'font-family:var(--serif);font-size:'+sz+'rem;color:rgba(255,255,255,'+op+');display:inline-block;transform:rotate('+rot+'deg);line-height:1.5;padding:0 .25rem;cursor:default;transition:transform .2s,opacity .2s';
-      span.onmouseenter = () => { span.style.opacity='1'; span.style.transform='rotate(0deg) scale(1.15)'; };
-      span.onmouseleave = () => { span.style.opacity=String(op); span.style.transform='rotate('+rot+'deg)'; };
-      el.appendChild(span);
+      const n   = Math.min(i, SIZE.length - 1);
+      const sz  = Math.max(SIZE[n] * Math.sqrt(w.count / max), 0.7).toFixed(2);
+      const op  = OPA[n];
+      const rot = (Math.random() - 0.5) * 10;
+      const s = document.createElement('span');
+      s.textContent = w.text;
+      s.style.cssText = [
+        'font-family:var(--serif)',
+        'font-size:' + sz + 'rem',
+        'color:rgba(255,255,255,' + op + ')',
+        'display:inline-block',
+        'transform:rotate(' + rot + 'deg)',
+        'line-height:1.5',
+        'padding:0 .3rem',
+        'cursor:default',
+        'transition:transform .2s,opacity .2s',
+      ].join(';');
+      s.onmouseenter = () => { s.style.opacity = '1'; s.style.transform = 'scale(1.15)'; };
+      s.onmouseleave = () => { s.style.opacity = String(op); s.style.transform = 'rotate(' + rot + 'deg)'; };
+      el.appendChild(s);
     });
   }
 
-  const section = document.getElementById('stats-viewer');
-  let rendered = false;
-
-  async function render() {
-    if (rendered) return;
-    rendered = true;
-
-    // Visit counter
-    countUp(document.getElementById('sv-visits'), d.visits, 1100);
-    const vBar = document.getElementById('sv-visits-bar');
-    if (vBar) setTimeout(()=>{ vBar.style.width = Math.min((d.visits/300)*100, 95)+'%'; }, 350);
+  // ── Paint all values ────────────────────────
+  function paint() {
+    // Visit count
+    countUp('sv-visits', d.visits, 1000);
+    const bar = document.getElementById('sv-visits-bar');
+    if (bar) setTimeout(() => { bar.style.width = Math.min((d.visits / 300) * 100, 95) + '%'; }, 300);
 
     // Source card
-    const srcEl  = document.getElementById('sv-source');
+    const srcLabel = { linkedin:'LinkedIn', github:'GitHub', direct:'Direct link', other:'Web / Other' };
+    setEl('sv-source', srcLabel[source] || 'Unknown');
     const srcSub = document.getElementById('sv-source-sub');
-    const srcMap = {linkedin:'LinkedIn', github:'GitHub', direct:'Direct link', other:'Web / Other'};
-    if (srcEl)  srcEl.textContent  = srcMap[source] || 'Unknown';
     if (srcSub) {
-      try { srcSub.textContent = document.referrer ? new URL(document.referrer).hostname : 'No referrer'; }
-      catch(e) { srcSub.textContent = document.referrer || 'No referrer'; }
+      try { srcSub.textContent = ref ? new URL(ref).hostname : 'No referrer'; }
+      catch(e) { srcSub.textContent = ref || 'No referrer'; }
     }
 
-    // Traffic source word cloud — all 4 always shown
-    const srcLabels = {linkedin:'LinkedIn', github:'GitHub', direct:'Direct', other:'Other'};
+    // Traffic source cloud — always show all 4, sized by visit count
     const srcMax = Math.max(...Object.values(d.sources), 1);
-    const srcWords = ['linkedin','github','direct','other']
-      .map(k => ({ text: srcLabels[k], count: d.sources[k] || 0 }))
-      .map(w => ({ ...w, count: w.count === 0 ? srcMax*0.15 : w.count }))
-      .sort((a,b) => b.count - a.count);
-    setTimeout(()=>renderCloud('sv-source-cloud', srcWords), 400);
+    const srcWords = ['direct', 'linkedin', 'github', 'other']
+      .map(k => ({
+        text: { linkedin:'LinkedIn', github:'GitHub', direct:'Direct', other:'Other' }[k],
+        count: d.sources[k] || (srcMax * 0.12),
+      }))
+      .sort((a, b) => b.count - a.count);
+    renderCloud('sv-source-cloud', srcWords);
 
-    // Location — fetch on EVERY load, always store city
-    const loc = await getLocation();
-    if (loc && loc.city) {
-      const locEl  = document.getElementById('sv-location');
-      const locSub = document.getElementById('sv-location-sub');
-      if (locEl)  locEl.textContent  = loc.city;
-      if (locSub) locSub.textContent = (loc.region||'') + (loc.country ? ', '+loc.country : '');
+    // Location cloud from stored history
+    const cityWords = d.cityList
+      .map(city => ({ text: city, count: d.cities[city] || 1 }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+    if (cityWords.length) renderCloud('sv-location-cloud', cityWords);
 
-      // Always increment this city's count on every page load
+    setEl('sv-footer', 'Analytics stored locally · Updates on every visit');
+  }
+
+  // ── Fetch location async, update after paint ─
+  async function fetchLocation() {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 5000);
+      const r = await fetch('https://ipinfo.io/json', { signal: ctrl.signal });
+      if (!r.ok) return;
+      const loc = await r.json();
+      if (!loc || !loc.city) return;
+
+      setEl('sv-location', loc.city);
+      const sub = document.getElementById('sv-location-sub');
+      if (sub) sub.textContent = (loc.region || '') + (loc.country ? ', ' + loc.country : '');
+
+      // Store city and re-render location cloud
       d.cities[loc.city] = (d.cities[loc.city] || 0) + 1;
       if (!d.cityList.includes(loc.city)) d.cityList.unshift(loc.city);
       try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
-    } else {
-      const el = document.getElementById('sv-location');
-      if (el) { el.textContent = 'Private'; el.style.fontSize='1.1rem'; }
+
+      const cityWords = d.cityList
+        .map(city => ({ text: city, count: d.cities[city] || 1 }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20);
+      renderCloud('sv-location-cloud', cityWords);
+    } catch(e) {
+      setEl('sv-location', 'Private');
     }
-
-    // Location word cloud — real visited cities only, sorted by visit count
-    const cityWords = d.cityList
-      .map(city => ({ text: city, count: d.cities[city] || 1 }))
-      .sort((a,b) => b.count - a.count)
-      .slice(0, 20);
-    if (!cityWords.length) cityWords.push({ text: loc&&loc.city ? loc.city : 'Gathering…', count:1 });
-    setTimeout(()=>renderCloud('sv-location-cloud', cityWords), 600);
-
-    const ft = document.getElementById('sv-footer');
-    if (ft) ft.textContent = 'Analytics stored locally · Counts every page load';
   }
 
-  if (section) {
-    const _obs = new IntersectionObserver(e => { if(e[0].isIntersecting) render(); }, {threshold:0, rootMargin:'0px'});
-    _obs.observe(section);
-    // Fallback: render after 3s even if intersection never fires
-    setTimeout(() => render(), 3000);
-  }
-
-  // Show count immediately on page load
-  window.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('sv-visits');
-    if (el) el.textContent = String(d.visits);
-  });
-  // Also update if DOM is already ready
-  const el = document.getElementById('sv-visits');
-  if (el) el.textContent = String(d.visits);
+  // ── Run immediately (DOM is ready since script is at end of body) ──
+  paint();
+  fetchLocation();
 })();
