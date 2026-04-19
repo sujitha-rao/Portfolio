@@ -460,24 +460,6 @@ let userEmail = null;
 let awaitingEmail = false;
 let emailSentThisSession = false;
 
-// System prompt for Claude
-const SYSTEM_PROMPT = `You are Sujitha Suresh Rao's AI portfolio assistant. Be warm, professional, and concise (2-4 sentences max per reply). You represent Sujitha and help visitors learn about her.
-
-Key facts:
-- Senior Software Engineer, 9+ years experience
-- SAP BTP Certified Solution Architect
-- Expert: Java 8+, Spring Boot, AWS (EKS, Kafka, S3), Kubernetes, SAP BTP, Cloud Foundry, CI/CD
-- Currently: Georgia Tech OMSCS (MS CS, part-time, Jan 2026)
-- Experience: SAP Concur (2022-2024), SAP SuccessFactors/SAP Labs (2020-2022), Unisys (2015-2020)
-- Achievements: 2M+ records/hr pipeline, 40% reliability boost, 35% defect reduction
-- Certifications: SAP BTP Architect (2026), PagerDuty DevOps (2026), IBM AI Developer (2025)
-- Location: Atlanta, GA. Email: sujitharao93@gmail.com
-- Open to conversations, connections, and new opportunities
-- LinkedIn: linkedin.com/in/sujitha-rao
-
-If someone asks about something you don't know, say you'll make sure Sujitha gets their message. Always stay positive about Sujitha. If asked about salary/compensation, suggest reaching out directly.`;
-
-async 
 // ── Local Knowledge Base — answers from Sujitha's profile ──────
 const KB = {
   'experience|years|background|career|work':
@@ -827,7 +809,7 @@ ${msg}`);
     const srcWords = ['direct', 'linkedin', 'github', 'other']
       .map(k => ({
         text: { linkedin:'LinkedIn', github:'GitHub', direct:'Direct', other:'Other' }[k],
-        count: d.sources[k] || (srcMax * 0.12),
+        count: d.sources[k] || Math.max(srcMax * 0.25, 0.5),
       }))
       .sort((a, b) => b.count - a.count);
     renderCloud('sv-source-cloud', srcWords);
@@ -837,7 +819,13 @@ ${msg}`);
       .map(city => ({ text: city, count: d.cities[city] || 1 }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
-    if (cityWords.length) renderCloud('sv-location-cloud', cityWords);
+    if (cityWords.length) {
+      renderCloud('sv-location-cloud', cityWords);
+    } else {
+      // Show placeholder while ipinfo loads
+      const cloudEl = document.getElementById('sv-location-cloud');
+      if (cloudEl) cloudEl.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-family:var(--mono);font-size:12px;">Detecting location…</span>';
+    }
 
     setEl('sv-footer', 'Analytics stored locally · Updates on every visit');
   }
