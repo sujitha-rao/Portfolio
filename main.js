@@ -717,8 +717,8 @@ ${msg}`);
 // ═══════════════════════════════════════════
 (function initAnalytics() {
   // ── Worker URL — replace with your Cloudflare Worker URL after deploying ──
-  // See worker/DEPLOY.md for the 10-minute free setup guide.
-  const WORKER_URL = 'https://sujitha-portfolio.REPLACE-WITH-YOUR-USERNAME.workers.dev';
+  // See worker/DEPLOY.md for the 10-minute free setup guide. 
+  const WORKER_URL = 'https://portfolio.sujitharao93.workers.dev';
   const WORKER_READY = !WORKER_URL.includes('REPLACE-WITH');
 
   const LS_KEY = 'ssr_v7'; // local fallback key
