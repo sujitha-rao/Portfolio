@@ -716,29 +716,21 @@ ${msg}`);
 // PORTFOLIO ANALYTICS — runs on page load, no IntersectionObserver dependency
 // ═══════════════════════════════════════════
 (function initAnalytics() {
-  const STORE = 'ssr_v7';
+  // ── Worker URL — replace with your Cloudflare Worker URL after deploying ──
+  // See worker/DEPLOY.md for the 10-minute free setup guide.
+  const WORKER_URL = 'https://sujitha-portfolio.REPLACE-WITH-YOUR-USERNAME.workers.dev';
+  const WORKER_READY = !WORKER_URL.includes('REPLACE-WITH');
 
-  // Load or seed data
-  let d = {};
-  try { d = JSON.parse(localStorage.getItem(STORE)) || {}; } catch(e) {}
-  if (!d.visits)   d.visits   = 51;
-  if (!d.sources)  d.sources  = {};
-  if (!d.cities)   d.cities   = {};
-  if (!d.cityList) d.cityList = [];
+  const LS_KEY = 'ssr_v7'; // local fallback key
 
-  // Detect traffic source from referrer
+  // ── Detect traffic source ────────────────────────────────────
   const ref = document.referrer || '';
   const source = /linkedin/i.test(ref) ? 'linkedin'
                : /github/i.test(ref)   ? 'github'
                : ref === ''             ? 'direct'
                : 'other';
 
-  // Increment every page load
-  d.visits++;
-  d.sources[source] = (d.sources[source] || 0) + 1;
-  try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
-
-  // ── Helpers ────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────
   function setEl(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
@@ -747,12 +739,11 @@ ${msg}`);
   function countUp(id, target, dur) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.textContent = target.toLocaleString(); // set immediately
+    el.textContent = Math.round(target).toLocaleString(); // set immediately
     const t0 = Date.now();
     (function tick() {
       const p = Math.min((Date.now() - t0) / dur, 1);
-      const v = Math.round(target * (1 - Math.pow(1 - p, 3)));
-      el.textContent = v.toLocaleString();
+      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3))).toLocaleString();
       if (p < 1) requestAnimationFrame(tick);
     })();
   }
@@ -762,112 +753,158 @@ ${msg}`);
     if (!el || !words.length) return;
     el.innerHTML = '';
     const max  = Math.max(...words.map(w => w.count), 1);
-    const SIZE = [2.2, 1.8, 1.5, 1.25, 1.05, 0.9, 0.8, 0.72];
-    const OPA  = [1.0, 0.9, 0.82, 0.74, 0.66, 0.6, 0.55, 0.5];
+    const SIZES = [2.2, 1.8, 1.55, 1.3, 1.1, 0.95, 0.85, 0.75];
+    const OPS   = [1.0, 0.92, 0.84, 0.76, 0.68, 0.62, 0.56, 0.50];
     words.forEach((w, i) => {
-      const n   = Math.min(i, SIZE.length - 1);
-      const sz  = Math.max(SIZE[n] * Math.sqrt(w.count / max), 0.7).toFixed(2);
-      const op  = OPA[n];
+      const n  = Math.min(i, SIZES.length - 1);
+      const sz = Math.max(SIZES[n] * Math.sqrt(w.count / max), 0.72).toFixed(2);
+      const op = OPS[n];
       const rot = (Math.random() - 0.5) * 10;
       const s = document.createElement('span');
       s.textContent = w.text;
-      s.style.cssText = [
-        'font-family:var(--serif)',
-        'font-size:' + sz + 'rem',
-        'color:rgba(255,255,255,' + op + ')',
-        'display:inline-block',
-        'transform:rotate(' + rot + 'deg)',
-        'line-height:1.5',
-        'padding:0 .3rem',
-        'cursor:default',
-        'transition:transform .2s,opacity .2s',
-      ].join(';');
+      s.style.cssText = 'font-family:var(--serif);font-size:' + sz + 'rem;color:rgba(255,255,255,' + op + ');display:inline-block;transform:rotate(' + rot + 'deg);line-height:1.5;padding:0 .3rem;cursor:default;transition:transform .2s,opacity .2s';
       s.onmouseenter = () => { s.style.opacity = '1'; s.style.transform = 'scale(1.15)'; };
       s.onmouseleave = () => { s.style.opacity = String(op); s.style.transform = 'rotate(' + rot + 'deg)'; };
       el.appendChild(s);
     });
   }
 
-  // ── Paint all values ────────────────────────
-  function paint() {
-    // Visit count
-    countUp('sv-visits', d.visits, 1000);
+  // ── Paint analytics data into the UI ─────────────────────────
+  function paint(data) {
+    // Total visits
+    countUp('sv-visits', data.visits, 1200);
     const bar = document.getElementById('sv-visits-bar');
-    if (bar) setTimeout(() => { bar.style.width = Math.min((d.visits / 300) * 100, 95) + '%'; }, 300);
+    if (bar) setTimeout(() => { bar.style.width = Math.min((data.visits / 300) * 100, 95) + '%'; }, 400);
 
     // Source card
     const srcLabel = { linkedin:'LinkedIn', github:'GitHub', direct:'Direct link', other:'Web / Other' };
-    setEl('sv-source', srcLabel[source] || 'Unknown');
+    setEl('sv-source', srcLabel[source]);
     const srcSub = document.getElementById('sv-source-sub');
     if (srcSub) {
       try { srcSub.textContent = ref ? new URL(ref).hostname : 'No referrer'; }
       catch(e) { srcSub.textContent = ref || 'No referrer'; }
     }
 
-    // Traffic source cloud — always show all 4, sized by visit count
-    const srcMax = Math.max(...Object.values(d.sources), 1);
-    const srcWords = ['direct', 'linkedin', 'github', 'other']
-      .map(k => ({
-        text: { linkedin:'LinkedIn', github:'GitHub', direct:'Direct', other:'Other' }[k],
-        count: d.sources[k] || Math.max(srcMax * 0.25, 0.5),
-      }))
-      .sort((a, b) => b.count - a.count);
+    // Traffic source word cloud — all 4 always shown
+    const srcMax = Math.max(data.sources.linkedin, data.sources.github, data.sources.direct, data.sources.other, 1);
+    const srcWords = [
+      { text: 'Direct',   count: data.sources.direct   || 0 },
+      { text: 'LinkedIn', count: data.sources.linkedin  || 0 },
+      { text: 'GitHub',   count: data.sources.github    || 0 },
+      { text: 'Other',    count: data.sources.other     || 0 },
+    ].map(w => ({ ...w, count: Math.max(w.count, srcMax * 0.25) }))
+     .sort((a, b) => b.count - a.count);
     renderCloud('sv-source-cloud', srcWords);
 
-    // Location cloud from stored history
-    const cityWords = d.cityList
-      .map(city => ({ text: city, count: d.cities[city] || 1 }))
+    // Location cloud
+    const cityWords = (data.cities || [])
+      .map(city => ({ text: city, count: data.cityCounts[city] || 1 }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
     if (cityWords.length) {
       renderCloud('sv-location-cloud', cityWords);
     } else {
-      // Show placeholder while ipinfo loads
-      const cloudEl = document.getElementById('sv-location-cloud');
-      if (cloudEl) cloudEl.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-family:var(--mono);font-size:12px;">Detecting location…</span>';
+      const el = document.getElementById('sv-location-cloud');
+      if (el) el.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-family:var(--mono);font-size:12px;">Detecting…</span>';
     }
 
-    setEl('sv-footer', 'Analytics stored locally · Updates on every visit');
+    setEl('sv-footer', WORKER_READY
+      ? 'Universal analytics · shared across all visitors worldwide'
+      : 'Analytics stored locally · Deploy worker for universal stats (see worker/DEPLOY.md)');
   }
 
-  // ── Fetch location async, update after paint ─
-  async function fetchLocation() {
+  // ── Fetch location from ipinfo ────────────────────────────────
+  async function getLocation() {
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 5000);
       const r = await fetch('https://ipinfo.io/json', { signal: ctrl.signal });
-      if (!r.ok) return;
-      const loc = await r.json();
-      if (!loc || !loc.city) return;
+      return r.ok ? r.json() : null;
+    } catch(e) { return null; }
+  }
 
+  // ── LOCAL FALLBACK (used until worker is deployed) ────────────
+  function localFallback() {
+    let d = {};
+    try { d = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(e) {}
+    if (!d.visits)   d.visits   = 51;
+    if (!d.sources)  d.sources  = {};
+    if (!d.cities)   d.cities   = {};
+    if (!d.cityList) d.cityList = [];
+
+    d.visits++;
+    d.sources[source] = (d.sources[source] || 0) + 1;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch(e) {}
+
+    paint({
+      visits:     d.visits,
+      sources:    d.sources,
+      cities:     d.cityList,
+      cityCounts: d.cities,
+    });
+
+    // Fetch location and update cloud
+    getLocation().then(loc => {
+      if (!loc || !loc.city) return;
       setEl('sv-location', loc.city);
       const sub = document.getElementById('sv-location-sub');
       if (sub) sub.textContent = (loc.region || '') + (loc.country ? ', ' + loc.country : '');
-
-      // Store city and re-render location cloud
       d.cities[loc.city] = (d.cities[loc.city] || 0) + 1;
       if (!d.cityList.includes(loc.city)) d.cityList.unshift(loc.city);
-      try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e) {}
-
-      const cityWords = d.cityList
-        .map(city => ({ text: city, count: d.cities[city] || 1 }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 20);
+      try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch(e) {}
+      const cityWords = d.cityList.map(c => ({ text: c, count: d.cities[c] || 1 })).sort((a,b)=>b.count-a.count).slice(0,20);
       renderCloud('sv-location-cloud', cityWords);
-    } catch(e) {
+    });
+  }
+
+  // ── WORKER MODE (universal analytics) ────────────────────────
+  async function workerMode() {
+    // 1. Get location first so we can include city in the hit
+    const loc = await getLocation();
+    const city    = loc?.city    || null;
+    const country = loc?.country || null;
+    const region  = loc?.region  || null;
+
+    // Show location card immediately
+    if (city) {
+      setEl('sv-location', city);
+      const sub = document.getElementById('sv-location-sub');
+      if (sub) sub.textContent = (region || '') + (country ? ', ' + country : '');
+    } else {
       setEl('sv-location', 'Private');
+    }
+
+    // 2. Hit the counter (increment + get updated data in one call)
+    const [hitRes, getRes] = await Promise.allSettled([
+      fetch(WORKER_URL + '/api/analytics/hit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source, city, country, region }),
+      }).then(r => r.json()),
+      fetch(WORKER_URL + '/api/analytics/get').then(r => r.json()),
+    ]);
+
+    if (getRes.status === 'fulfilled' && getRes.value) {
+      paint(getRes.value);
+    } else {
+      // Worker deployed but GET failed — show hit count at least
+      const visits = hitRes.status === 'fulfilled' ? hitRes.value?.visits || 51 : 51;
+      paint({ visits, sources: {[source]:1}, cities: city ? [city] : [], cityCounts: city ? {[city]:1} : {} });
     }
   }
 
-  // ── Run paint() directly — script is at end of body, DOM is ready ──
-  // Use both immediate and DOMContentLoaded to be safe
-  function runPaint() {
-    try { paint(); } catch(e) { console.error('paint error:', e); }
-    try { fetchLocation(); } catch(e) {}
+  // ── Run ───────────────────────────────────────────────────────
+  function run() {
+    if (WORKER_READY) {
+      workerMode().catch(() => localFallback()); // fall back if worker is unreachable
+    } else {
+      localFallback();
+    }
   }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runPaint);
+    document.addEventListener('DOMContentLoaded', run);
   } else {
-    runPaint(); // DOM already ready
+    run();
   }
 })();
