@@ -510,6 +510,22 @@
       </div>
     </div>
 
+    <script>
+    // Direct localStorage read — guaranteed to work regardless of main.js timing
+    (function(){
+      try {
+        var d = JSON.parse(localStorage.getItem('ssr_v7')||'{"visits":51}');
+        var vEl = document.getElementById('sv-visits');
+        if (vEl && vEl.textContent === '—') vEl.textContent = String(d.visits || 51);
+        var srcEl = document.getElementById('sv-source');
+        if (srcEl && srcEl.textContent === '—') {
+          var ref = document.referrer || '';
+          var src = /linkedin/i.test(ref) ? 'LinkedIn' : /github/i.test(ref) ? 'GitHub' : ref ? 'Web / Other' : 'Direct link';
+          srcEl.textContent = src;
+        }
+      } catch(e) {}
+    })();
+    </script>
     <div style="margin-top:1.8rem;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.25);text-align:center;" id="sv-footer">Updating…</div>
   </div>
 </section>

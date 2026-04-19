@@ -765,6 +765,7 @@ ${msg}`);
   function countUp(id, target, dur) {
     const el = document.getElementById(id);
     if (!el) return;
+    el.textContent = target.toLocaleString(); // set immediately
     const t0 = Date.now();
     (function tick() {
       const p = Math.min((Date.now() - t0) / dur, 1);
@@ -870,7 +871,15 @@ ${msg}`);
     }
   }
 
-  // ── Run immediately (DOM is ready since script is at end of body) ──
-  paint();
-  fetchLocation();
+  // ── Run paint() directly — script is at end of body, DOM is ready ──
+  // Use both immediate and DOMContentLoaded to be safe
+  function runPaint() {
+    try { paint(); } catch(e) { console.error('paint error:', e); }
+    try { fetchLocation(); } catch(e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runPaint);
+  } else {
+    runPaint(); // DOM already ready
+  }
 })();
