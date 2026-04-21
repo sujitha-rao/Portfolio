@@ -667,7 +667,7 @@ function submitTestimonial(e) {
   // ── Config ──────────────────────────────────────────────────
   // IMPORTANT: Replace with a NEW fine-grained token after revoking the old one.
   // Token needs ONLY: Repository sujitha-rao/Portfolio → Contents → Read and Write
-  const GITHUB_TOKEN   = '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';
+  const GITHUB_TOKEN   = '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';
   const GITHUB_REPO    = 'sujitha-rao/Portfolio';
   const GITHUB_BRANCH  = 'main';
   const ANALYTICS_FILE = 'analytics.json';
