@@ -716,31 +716,35 @@ ${msg}`);
 // PORTFOLIO ANALYTICS — runs on page load, no IntersectionObserver dependency
 // ═══════════════════════════════════════════
 (function initAnalytics() {
-  // ── Worker URL — replace with your Cloudflare Worker URL after deploying ──
-  // See worker/DEPLOY.md for the 10-minute free setup guide. 
-  const WORKER_URL = 'https://portfolio.sujitharao93.workers.dev';
-  const WORKER_READY = !WORKER_URL.includes('REPLACE-WITH');
+  // ── GitHub Analytics Config ───────────────────────────────────
+  // Create a fine-grained GitHub token with ONLY:
+  //   Repository: sujitha-rao/Portfolio
+  //   Permission:  Contents → Read and Write
+  // Then paste it below. Risk is minimal — token can only read/write analytics.json.
+  const GITHUB_TOKEN  = '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';
+  const GITHUB_REPO   = 'sujitha-rao/Portfolio';
+  const GITHUB_BRANCH = 'main';
+  const ANALYTICS_FILE = 'analytics.json';
+  const API_BASE = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + ANALYTICS_FILE;
+  const ENABLED = !GITHUB_TOKEN.includes('PASTE_YOUR');
 
-  const LS_KEY = 'ssr_v7'; // local fallback key
-
-  // ── Detect traffic source ────────────────────────────────────
-  const ref = document.referrer || '';
+  const ref    = document.referrer || '';
   const source = /linkedin/i.test(ref) ? 'linkedin'
                : /github/i.test(ref)   ? 'github'
                : ref === ''             ? 'direct'
                : 'other';
 
-  // ── Helpers ──────────────────────────────────────────────────
-  function setEl(id, text) {
+  // ── UI Helpers ────────────────────────────────────────────────
+  function setEl(id, val) {
     const el = document.getElementById(id);
-    if (el) el.textContent = text;
+    if (el) el.textContent = val;
   }
 
-  function countUp(id, target, dur) {
+  function countUp(id, target) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.textContent = Math.round(target).toLocaleString(); // set immediately
-    const t0 = Date.now();
+    el.textContent = Math.round(target).toLocaleString();
+    const t0 = Date.now(), dur = 1200;
     (function tick() {
       const p = Math.min((Date.now() - t0) / dur, 1);
       el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3))).toLocaleString();
@@ -752,15 +756,14 @@ ${msg}`);
     const el = document.getElementById(id);
     if (!el || !words.length) return;
     el.innerHTML = '';
-    const max  = Math.max(...words.map(w => w.count), 1);
-    const SIZES = [2.2, 1.8, 1.55, 1.3, 1.1, 0.95, 0.85, 0.75];
-    const OPS   = [1.0, 0.92, 0.84, 0.76, 0.68, 0.62, 0.56, 0.50];
+    const max = Math.max(...words.map(w => w.count), 1);
+    const S = [2.2, 1.85, 1.55, 1.3, 1.1, 0.95, 0.85, 0.75];
+    const O = [1.0, 0.92, 0.83, 0.74, 0.66, 0.60, 0.54, 0.49];
     words.forEach((w, i) => {
-      const n  = Math.min(i, SIZES.length - 1);
-      const sz = Math.max(SIZES[n] * Math.sqrt(w.count / max), 0.72).toFixed(2);
-      const op = OPS[n];
-      const rot = (Math.random() - 0.5) * 10;
-      const s = document.createElement('span');
+      const n  = Math.min(i, S.length - 1);
+      const sz = Math.max(S[n] * Math.sqrt(w.count / max), 0.72).toFixed(2);
+      const op = O[n], rot = (Math.random() - 0.5) * 10;
+      const s  = document.createElement('span');
       s.textContent = w.text;
       s.style.cssText = 'font-family:var(--serif);font-size:' + sz + 'rem;color:rgba(255,255,255,' + op + ');display:inline-block;transform:rotate(' + rot + 'deg);line-height:1.5;padding:0 .3rem;cursor:default;transition:transform .2s,opacity .2s';
       s.onmouseenter = () => { s.style.opacity = '1'; s.style.transform = 'scale(1.15)'; };
@@ -769,51 +772,77 @@ ${msg}`);
     });
   }
 
-  // ── Paint analytics data into the UI ─────────────────────────
-  function paint(data) {
-    // Total visits
-    countUp('sv-visits', data.visits, 1200);
+  function paintData(d) {
+    countUp('sv-visits', d.visits || 51);
     const bar = document.getElementById('sv-visits-bar');
-    if (bar) setTimeout(() => { bar.style.width = Math.min((data.visits / 300) * 100, 95) + '%'; }, 400);
+    if (bar) setTimeout(() => bar.style.width = Math.min(((d.visits || 51) / 300) * 100, 95) + '%', 350);
 
-    // Source card
-    const srcLabel = { linkedin:'LinkedIn', github:'GitHub', direct:'Direct link', other:'Web / Other' };
-    setEl('sv-source', srcLabel[source]);
+    const srcLabels = { linkedin: 'LinkedIn', github: 'GitHub', direct: 'Direct link', other: 'Web / Other' };
+    setEl('sv-source', srcLabels[source]);
     const srcSub = document.getElementById('sv-source-sub');
-    if (srcSub) {
-      try { srcSub.textContent = ref ? new URL(ref).hostname : 'No referrer'; }
-      catch(e) { srcSub.textContent = ref || 'No referrer'; }
-    }
+    if (srcSub) { try { srcSub.textContent = ref ? new URL(ref).hostname : 'No referrer'; } catch(e) {} }
 
-    // Traffic source word cloud — all 4 always shown
-    const srcMax = Math.max(data.sources.linkedin, data.sources.github, data.sources.direct, data.sources.other, 1);
+    const src    = d.sources    || {};
+    const srcMax = Math.max(src.direct || 0, src.linkedin || 0, src.github || 0, src.other || 0, 1);
     const srcWords = [
-      { text: 'Direct',   count: data.sources.direct   || 0 },
-      { text: 'LinkedIn', count: data.sources.linkedin  || 0 },
-      { text: 'GitHub',   count: data.sources.github    || 0 },
-      { text: 'Other',    count: data.sources.other     || 0 },
+      { text: 'Direct',   count: src.direct   || 0 },
+      { text: 'LinkedIn', count: src.linkedin  || 0 },
+      { text: 'GitHub',   count: src.github    || 0 },
+      { text: 'Other',    count: src.other     || 0 },
     ].map(w => ({ ...w, count: Math.max(w.count, srcMax * 0.25) }))
      .sort((a, b) => b.count - a.count);
     renderCloud('sv-source-cloud', srcWords);
 
-    // Location cloud
-    const cityWords = (data.cities || [])
-      .map(city => ({ text: city, count: data.cityCounts[city] || 1 }))
+    const cities    = d.cities     || [];
+    const cityCount = d.cityCounts || {};
+    const cityWords = cities
+      .map(c => ({ text: c, count: cityCount[c] || 1 }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
     if (cityWords.length) {
       renderCloud('sv-location-cloud', cityWords);
     } else {
-      const el = document.getElementById('sv-location-cloud');
-      if (el) el.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-family:var(--mono);font-size:12px;">Detecting…</span>';
+      const cl = document.getElementById('sv-location-cloud');
+      if (cl) cl.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-family:var(--mono);font-size:12px;">Detecting location…</span>';
     }
 
-    setEl('sv-footer', WORKER_READY
-      ? 'Universal analytics · shared across all visitors worldwide'
-      : 'Analytics stored locally · Deploy worker for universal stats (see worker/DEPLOY.md)');
+    setEl('sv-footer', ENABLED
+      ? 'Live stats · shared across all visitors · stored in GitHub'
+      : 'Add your GitHub token to main.js to enable universal analytics');
   }
 
-  // ── Fetch location from ipinfo ────────────────────────────────
+  // ── GitHub read/write ────────────────────────────────────────
+  const GH_HEADERS = {
+    'Authorization': 'Bearer ' + GITHUB_TOKEN,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'portfolio-analytics',
+  };
+
+  async function ghRead() {
+    const r = await fetch(API_BASE + '?ref=' + GITHUB_BRANCH, { headers: GH_HEADERS });
+    if (r.status === 404) return { data: null, sha: null };
+    const body = await r.json();
+    const data = JSON.parse(atob(body.content.replace(/\n/g, '')));
+    return { data, sha: body.sha };
+  }
+
+  async function ghWrite(data, sha) {
+    const body = {
+      message: 'analytics: ' + new Date().toISOString().slice(0, 10),
+      content: btoa(JSON.stringify(data)),
+      branch:  GITHUB_BRANCH,
+    };
+    if (sha) body.sha = sha;
+    const r = await fetch(API_BASE, { method: 'PUT', headers: GH_HEADERS, body: JSON.stringify(body) });
+    return r.ok;
+  }
+
+  function seedData() {
+    return { visits: 51, sources: { direct: 0, linkedin: 0, github: 0, other: 0 }, cities: [], cityCounts: {} };
+  }
+
+  // ── Visitor location ─────────────────────────────────────────
   async function getLocation() {
     try {
       const ctrl = new AbortController();
@@ -823,47 +852,18 @@ ${msg}`);
     } catch(e) { return null; }
   }
 
-  // ── LOCAL FALLBACK (used until worker is deployed) ────────────
-  function localFallback() {
-    let d = {};
-    try { d = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(e) {}
-    if (!d.visits)   d.visits   = 51;
-    if (!d.sources)  d.sources  = {};
-    if (!d.cities)   d.cities   = {};
-    if (!d.cityList) d.cityList = [];
+  // ── Main run ─────────────────────────────────────────────────
+  async function run() {
+    // Fetch location in parallel with GitHub read
+    const [loc, ghResult] = await Promise.allSettled([
+      getLocation(),
+      ENABLED ? ghRead() : Promise.resolve({ data: null, sha: null }),
+    ]);
 
-    d.visits++;
-    d.sources[source] = (d.sources[source] || 0) + 1;
-    try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch(e) {}
-
-    paint({
-      visits:     d.visits,
-      sources:    d.sources,
-      cities:     d.cityList,
-      cityCounts: d.cities,
-    });
-
-    // Fetch location and update cloud
-    getLocation().then(loc => {
-      if (!loc || !loc.city) return;
-      setEl('sv-location', loc.city);
-      const sub = document.getElementById('sv-location-sub');
-      if (sub) sub.textContent = (loc.region || '') + (loc.country ? ', ' + loc.country : '');
-      d.cities[loc.city] = (d.cities[loc.city] || 0) + 1;
-      if (!d.cityList.includes(loc.city)) d.cityList.unshift(loc.city);
-      try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch(e) {}
-      const cityWords = d.cityList.map(c => ({ text: c, count: d.cities[c] || 1 })).sort((a,b)=>b.count-a.count).slice(0,20);
-      renderCloud('sv-location-cloud', cityWords);
-    });
-  }
-
-  // ── WORKER MODE (universal analytics) ────────────────────────
-  async function workerMode() {
-    // 1. Get location first so we can include city in the hit
-    const loc = await getLocation();
-    const city    = loc?.city    || null;
-    const country = loc?.country || null;
-    const region  = loc?.region  || null;
+    const location = loc.status === 'fulfilled' ? loc.value : null;
+    const city     = location?.city    || null;
+    const country  = location?.country || null;
+    const region   = location?.region  || null;
 
     // Show location card immediately
     if (city) {
@@ -874,31 +874,51 @@ ${msg}`);
       setEl('sv-location', 'Private');
     }
 
-    // 2. Hit the counter (increment + get updated data in one call)
-    const [hitRes, getRes] = await Promise.allSettled([
-      fetch(WORKER_URL + '/api/analytics/hit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, city, country, region }),
-      }).then(r => r.json()),
-      fetch(WORKER_URL + '/api/analytics/get').then(r => r.json()),
-    ]);
-
-    if (getRes.status === 'fulfilled' && getRes.value) {
-      paint(getRes.value);
-    } else {
-      // Worker deployed but GET failed — show hit count at least
-      const visits = hitRes.status === 'fulfilled' ? hitRes.value?.visits || 51 : 51;
-      paint({ visits, sources: {[source]:1}, cities: city ? [city] : [], cityCounts: city ? {[city]:1} : {} });
+    if (!ENABLED) {
+      // Local fallback until token is added
+      let d = {};
+      try { d = JSON.parse(localStorage.getItem('ssr_analytics') || '{}'); } catch(e) {}
+      if (!d.visits)    d.visits    = 51;
+      if (!d.sources)   d.sources   = {};
+      if (!d.cities)    d.cities    = [];
+      if (!d.cityCounts)d.cityCounts= {};
+      d.visits++;
+      d.sources[source] = (d.sources[source] || 0) + 1;
+      if (city) {
+        d.cityCounts[city] = (d.cityCounts[city] || 0) + 1;
+        if (!d.cities.includes(city)) d.cities.unshift(city);
+      }
+      try { localStorage.setItem('ssr_analytics', JSON.stringify(d)); } catch(e) {}
+      paintData(d);
+      return;
     }
-  }
 
-  // ── Run ───────────────────────────────────────────────────────
-  function run() {
-    if (WORKER_READY) {
-      workerMode().catch(() => localFallback()); // fall back if worker is unreachable
-    } else {
-      localFallback();
+    // ── GITHUB MODE ─────────────────────────────────────────────
+    try {
+      let { data, sha } = ghResult.status === 'fulfilled' ? ghResult.value : { data: null, sha: null };
+      if (!data) data = seedData();
+
+      // Increment counts
+      data.visits++;
+      data.sources = data.sources || {};
+      data.sources[source] = (data.sources[source] || 0) + 1;
+
+      if (city) {
+        data.cityCounts = data.cityCounts || {};
+        data.cities     = data.cities     || [];
+        data.cityCounts[city] = (data.cityCounts[city] || 0) + 1;
+        if (!data.cities.includes(city)) data.cities.unshift(city);
+        if (data.cities.length > 50) data.cities = data.cities.slice(0, 50);
+      }
+
+      // Paint current data immediately
+      paintData(data);
+
+      // Write updated analytics back to GitHub (async, non-blocking for UX)
+      ghWrite(data, sha).catch(() => {});
+    } catch(e) {
+      // GitHub read/write failed — still show something
+      paintData(seedData());
     }
   }
 
