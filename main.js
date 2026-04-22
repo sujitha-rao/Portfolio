@@ -715,60 +715,51 @@ ${msg}`);
 // ═══════════════════════════════════════════
 // PORTFOLIO ANALYTICS — runs on page load, no IntersectionObserver dependency
 // ═══════════════════════════════════════════
-
 // ═══════════════════════════════════════════
-// VISITOR GREETING
+// VISITOR GREETING — post-it in hero area
+// Appears within 10s, shows 5s, then fades
 // ═══════════════════════════════════════════
 (function() {
   function playChime() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 — pleasant major chord
-      notes.forEach((freq, i) => {
-        const osc  = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(0, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.05 + i * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6 + i * 0.12);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + i * 0.12);
-        osc.stop(ctx.currentTime + 0.8 + i * 0.12);
+      [[523.25,0],[659.25,.12],[783.99,.24]].forEach(([freq,t]) => {
+        const osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.type = 'sine'; osc.frequency.value = freq;
+        g.gain.setValueAtTime(0, ctx.currentTime+t);
+        g.gain.linearRampToValueAtTime(0.15, ctx.currentTime+t+.05);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+t+.6);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(ctx.currentTime+t); osc.stop(ctx.currentTime+t+.7);
       });
-      setTimeout(() => { try { ctx.close(); } catch(e) {} }, 1500);
+      setTimeout(()=>{ try{ctx.close();}catch(e){} }, 1600);
     } catch(e) {}
   }
 
   function showGreeting(city) {
-    const toast = document.getElementById('visitor-greeting');
-    const text  = document.getElementById('vg-text');
-    if (!toast || !text) return;
-
-    const greeting = city
-      ? 'Hello, visitor from <span class="vg-city">' + city + '</span> !'
-      : 'Hello, welcome to my portfolio! 🌏';
-    text.innerHTML = greeting;
-
-    // Show toast
-    setTimeout(() => toast.classList.add('show'), 100);
-    // Play chime after slight delay
-    setTimeout(playChime, 400);
-    // Auto-hide after 5 seconds
+    const el    = document.getElementById('visitor-greeting');
+    const cityEl= document.getElementById('vg-city');
+    if (!el || !cityEl) return;
+    cityEl.textContent = city || 'the world';
+    // Show
     setTimeout(() => {
-      toast.style.transition = 'transform .4s ease, opacity .4s ease';
-      toast.classList.remove('show');
-    }, 5000);
+      el.classList.add('vg-show');
+      playChime();
+    }, 200);
+    // Hide after 5 seconds
+    setTimeout(() => {
+      el.classList.remove('vg-show');
+      el.classList.add('vg-hide');
+    }, 5200);
   }
 
-  // Fetch city from ipinfo after page loads
+  // Fire within 10 seconds of page load
   window.addEventListener('load', () => {
     setTimeout(() => {
       fetch('https://ipinfo.io/json')
         .then(r => r.ok ? r.json() : null)
         .then(loc => showGreeting(loc?.city || null))
         .catch(() => showGreeting(null));
-    }, 1200); // slight delay so page is rendered first
+    }, 800);
   });
 })();
