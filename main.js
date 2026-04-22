@@ -716,13 +716,27 @@ ${msg}`);
 // PORTFOLIO ANALYTICS — runs on page load, no IntersectionObserver dependency
 // ═══════════════════════════════════════════
 // ═══════════════════════════════════════════
-// VISITOR GREETING — post-it in hero area
-// Appears within 10s, shows 5s, then fades
+// VISITOR GREETING — post-it pop-up
+// Fixed position, parallel geo APIs, audio
+// unlocked on first user gesture
 // ═══════════════════════════════════════════
 (function() {
-  function playChime() {
+  // ── Audio: must be unlocked by user gesture ──────────────────────
+  let _audioCtx = null;
+  let _chimePending = false;
+
+  function getCtx() {
+    if (!_audioCtx) {
+      try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e) { return null; }
+    }
+    return _audioCtx;
+  }
+
+  function doPlayChime() {
+    const ctx = getCtx(); if (!ctx) return;
+    if (ctx.state === 'suspended') { ctx.resume(); }
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
       [[523.25,0],[659.25,.12],[783.99,.24]].forEach(([freq,t]) => {
         const osc = ctx.createOscillator(), g = ctx.createGain();
         osc.type = 'sine'; osc.frequency.value = freq;
@@ -732,50 +746,78 @@ ${msg}`);
         osc.connect(g); g.connect(ctx.destination);
         osc.start(ctx.currentTime+t); osc.stop(ctx.currentTime+t+.7);
       });
-      setTimeout(()=>{ try{ctx.close();}catch(e){} }, 1600);
     } catch(e) {}
   }
 
+  // On first user gesture: resume context + drain pending chime
+  function onFirstGesture() {
+    document.removeEventListener('click',      onFirstGesture, true);
+    document.removeEventListener('keydown',    onFirstGesture, true);
+    document.removeEventListener('touchstart', onFirstGesture, true);
+    const ctx = getCtx();
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    if (_chimePending) { _chimePending = false; doPlayChime(); }
+  }
+  document.addEventListener('click',      onFirstGesture, { capture:true, once:true });
+  document.addEventListener('keydown',    onFirstGesture, { capture:true, once:true });
+  document.addEventListener('touchstart', onFirstGesture, { capture:true, once:true });
+
+  function playChime() {
+    const ctx = getCtx();
+    // If audio context is ready (user has already interacted), play now
+    if (ctx && ctx.state === 'running') { doPlayChime(); }
+    else { _chimePending = true; } // play on next gesture
+  }
+
+  // ── Show/hide the post-it ─────────────────────────────────────────
   function showGreeting(city) {
-    const el    = document.getElementById('visitor-greeting');
-    const cityEl= document.getElementById('vg-city');
+    const el     = document.getElementById('visitor-greeting');
+    const cityEl = document.getElementById('vg-city');
     if (!el || !cityEl) return;
     cityEl.textContent = city || 'the world';
-    // Show
-    setTimeout(() => {
-      el.classList.add('vg-show');
-      playChime();
-    }, 200);
-    // Hide after 5 seconds
+    el.classList.remove('vg-hide');
+    el.classList.add('vg-show');
+    playChime();
     setTimeout(() => {
       el.classList.remove('vg-show');
       el.classList.add('vg-hide');
-    }, 5200);
+      _chimePending = false; // discard pending chime once post-it is gone
+    }, 5000);
   }
 
-  // Fire within 10 seconds of page load — tries multiple free geo APIs
+  // ── Parallel geo fetch with per-request timeout ───────────────────
+  function fetchWithTimeout(url, ms) {
+    return Promise.race([
+      fetch(url).then(r => { if (!r.ok) throw new Error('!ok'); return r.json(); }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
+    ]);
+  }
+
   async function fetchCity() {
     const apis = [
-      { url: 'https://freeipapi.com/api/json', extract: d => d?.cityName || null },
-      { url: 'https://ipwho.is/',              extract: d => d?.city || null },
-      { url: 'https://ipapi.co/json/',         extract: d => d?.city || null },
-      { url: 'https://ipinfo.io/json',         extract: d => d?.city || null },
+      { url: 'https://freeipapi.com/api/json', extract: d => d?.cityName },
+      { url: 'https://ipwho.is/',              extract: d => d?.city     },
+      { url: 'https://ipapi.co/json/',         extract: d => d?.city     },
+      { url: 'https://ipinfo.io/json',         extract: d => d?.city     },
     ];
-    for (const api of apis) {
-      try {
-        const r = await fetch(api.url);
-        if (!r.ok) continue;
-        const d = await r.json();
-        const city = api.extract(d);
-        if (city && city.length > 0) return city;
-      } catch(e) { /* try next */ }
-    }
-    return null;
+    try {
+      // Race all APIs — first valid city wins
+      return await Promise.any(
+        apis.map(api =>
+          fetchWithTimeout(api.url, 3000).then(d => {
+            const c = api.extract(d);
+            if (c && c.trim().length > 0) return c.trim();
+            return Promise.reject(new Error('no city'));
+          })
+        )
+      );
+    } catch(e) { return null; }
   }
 
+  // ── Trigger on load ───────────────────────────────────────────────
   window.addEventListener('load', () => {
     setTimeout(() => {
       fetchCity().then(city => showGreeting(city));
-    }, 800);
+    }, 1000);
   });
 })();
