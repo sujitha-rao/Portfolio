@@ -763,10 +763,10 @@ ${msg}`);
   document.addEventListener('touchstart', onFirstGesture, { capture:true, once:true });
 
   function playChime() {
-    const ctx = getCtx();
-    // If audio context is ready (user has already interacted), play now
-    if (ctx && ctx.state === 'running') { doPlayChime(); }
-    else { _chimePending = true; } // play on next gesture
+    // Don't create AudioContext before user gesture — queue it instead
+    if (!_audioCtx) { _chimePending = true; return; }
+    if (_audioCtx.state === 'running') { doPlayChime(); }
+    else { _chimePending = true; }
   }
 
   // ── Show/hide the post-it ─────────────────────────────────────────

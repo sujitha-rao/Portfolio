@@ -180,14 +180,6 @@
     </div><!-- /avatar-stage -->
     <div class="photo-shadow"></div>
 
-      <!-- VISITOR GREETING POST-IT -->
-      <div id="visitor-greeting" class="vg-postit">
-        <div class="vg-tape"></div>
-        <div class="vg-wave-emoji">👋</div>
-        <div class="vg-hello">Hello,</div>
-        <div class="vg-city-line">visitor from</div>
-        <div class="vg-city" id="vg-city">—</div>
-      </div>
   </div>
       <!-- MOBILE: Post-it carousel (hidden on desktop) -->
       <div id="mobile-pi-carousel" class="mobile-only-pi">
@@ -526,6 +518,15 @@
 
 <script src="https://platform.linkedin.com/badges/js/profile.js" async defer></script>
 <script src="main.js"></script>
+
+  <!-- VISITOR GREETING — direct body child so position:fixed works correctly -->
+  <div id="visitor-greeting" class="vg-postit">
+    <div class="vg-tape"></div>
+    <div class="vg-wave-emoji">👋</div>
+    <div class="vg-hello">Hello,</div>
+    <div class="vg-city-line">visitor from</div>
+    <div class="vg-city" id="vg-city">—</div>
+  </div>
 
 </body>
 </html>
