@@ -753,13 +753,29 @@ ${msg}`);
     }, 5200);
   }
 
-  // Fire within 10 seconds of page load
+  // Fire within 10 seconds of page load — tries multiple free geo APIs
+  async function fetchCity() {
+    const apis = [
+      { url: 'https://freeipapi.com/api/json', extract: d => d?.cityName || null },
+      { url: 'https://ipwho.is/',              extract: d => d?.city || null },
+      { url: 'https://ipapi.co/json/',         extract: d => d?.city || null },
+      { url: 'https://ipinfo.io/json',         extract: d => d?.city || null },
+    ];
+    for (const api of apis) {
+      try {
+        const r = await fetch(api.url);
+        if (!r.ok) continue;
+        const d = await r.json();
+        const city = api.extract(d);
+        if (city && city.length > 0) return city;
+      } catch(e) { /* try next */ }
+    }
+    return null;
+  }
+
   window.addEventListener('load', () => {
     setTimeout(() => {
-      fetch('https://ipinfo.io/json')
-        .then(r => r.ok ? r.json() : null)
-        .then(loc => showGreeting(loc?.city || null))
-        .catch(() => showGreeting(null));
+      fetchCity().then(city => showGreeting(city));
     }, 800);
   });
 })();
