@@ -1,6 +1,6 @@
 # Sujitha Suresh Rao — Personal Portfolio
 
-> **Live site → [sujitha-rao.github.io/sujitha-portfolio](https://sujitha-rao.github.io/sujitha-portfolio)**
+> **Live site → [sujitha-rao.github.io/portfolio](https://sujitha-rao.github.io/portfolio)**
 
 A fully custom, hand-crafted personal portfolio for a Senior Software Engineer & SAP BTP Solution Architect. Built as a single-repo static site deployed on GitHub Pages — no framework, no build step, just clean HTML, CSS, and JavaScript.
 
