@@ -785,24 +785,26 @@ ${msg}`);
     }, 6000);
   }
 
-  // ── Geo lookup — best-effort, never blocks the post-it ───────────
-  function fetchWithTimeout(url, ms) {
-    return Promise.race([
-      fetch(url, { mode: 'cors' }).then(r => { if (!r.ok) throw new Error('!ok'); return r.json(); }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
-    ]);
+  // ── Get city — timezone first (instant), then real geo ───────────
+  function getCityFromTimezone() {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; // e.g. "America/New_York"
+      const part = tz.split('/').pop().replace(/_/g, ' '); // "New York"
+      return part || null;
+    } catch(e) { return null; }
   }
 
-  async function tryGetCity() {
-    // ipinfo.io is the most reliable CORS-enabled geo API for browser use
+  async function tryGetRealCity() {
+    // ipinfo.io: free, CORS-enabled, no key needed (50k/month)
     try {
-      const d = await fetchWithTimeout('https://ipinfo.io/json', 3000);
-      if (d?.city && d.city.trim().length > 0) return d.city.trim();
-    } catch(e) {}
-    // geolocation-db as secondary
-    try {
-      const d = await fetchWithTimeout('https://geolocation-db.com/json/', 3000);
-      if (d?.city && d.city !== 'null' && d.city.trim().length > 0) return d.city.trim();
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 3000);
+      const r = await fetch('https://ipinfo.io/json', { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (r.ok) {
+        const d = await r.json();
+        if (d?.city && d.city.trim()) return d.city.trim();
+      }
     } catch(e) {}
     return null;
   }
@@ -810,11 +812,13 @@ ${msg}`);
   // ── Trigger on load ───────────────────────────────────────────────
   window.addEventListener('load', () => {
     setTimeout(() => {
-      // Always show post-it immediately with "the world" fallback
-      showGreeting(null);
-      // Then try to update with actual city (best effort, 2s window)
+      // 1. Show immediately with timezone-derived city (no API needed)
+      const tzCity = getCityFromTimezone();
+      showGreeting(tzCity);
+
+      // 2. Try real IP geo — update text if we get a better answer
       const cityEl = document.getElementById('vg-city');
-      tryGetCity().then(city => {
+      tryGetRealCity().then(city => {
         if (city && cityEl) cityEl.textContent = city;
       });
     }, 1200);

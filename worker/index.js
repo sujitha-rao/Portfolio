@@ -35,12 +35,19 @@ export default {
 
     if (url.pathname === '/api/chat')            return handleChat(request, env);
     if (url.pathname === '/api/email')           return handleEmail(request, env);
-    if (url.pathname === '/api/analytics/hit')   return handleAnalyticsHit(request, env);
+    if (url.pathname === '/api/geo')              return handleGeo(request, env);
     if (url.pathname === '/api/analytics/get')   return handleAnalyticsGet(request, env);
 
     return new Response('Not found', { status: 404, headers: CORS });
   }
 };
+
+// ── Geo from Cloudflare edge (no external API, always works) ─────
+function handleGeo(request) {
+  const cf   = request.cf || {};
+  const city = cf.city || cf.region || cf.country || null;
+  return corsResponse({ city });
+}
 
 // ── KV Analytics ─────────────────────────────────────────────────
 // Keys stored in KV:
