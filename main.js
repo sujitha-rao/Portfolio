@@ -794,19 +794,18 @@ ${msg}`);
   }
 
   async function fetchCity() {
+    // Only APIs with proper CORS headers for browser requests from GitHub Pages
     const apis = [
-      { url: 'https://freeipapi.com/api/json', extract: d => d?.cityName },
-      { url: 'https://ipwho.is/',              extract: d => d?.city     },
-      { url: 'https://ipapi.co/json/',         extract: d => d?.city     },
-      { url: 'https://ipinfo.io/json',         extract: d => d?.city     },
+      { url: 'https://ipapi.co/json/',                extract: d => d?.city     },
+      { url: 'https://ipinfo.io/json',                extract: d => d?.city     },
+      { url: 'https://geolocation-db.com/json/',      extract: d => d?.city     },
     ];
     try {
-      // Race all APIs — first valid city wins
       return await Promise.any(
         apis.map(api =>
-          fetchWithTimeout(api.url, 3000).then(d => {
+          fetchWithTimeout(api.url, 4000).then(d => {
             const c = api.extract(d);
-            if (c && c.trim().length > 0) return c.trim();
+            if (c && c !== 'null' && c.trim().length > 0) return c.trim();
             return Promise.reject(new Error('no city'));
           })
         )
