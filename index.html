@@ -12,6 +12,13 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="stylesheet" href="style.css?v=20250422c">
+<style>
+  .pi-yellow { background: #fff176 !important; }
+  .pi-yellow .pi-header { color: #5d4037; }
+  .pi-yellow .pi-sub { color: #795548; }
+  .pi-yellow .pi-text { color: #5d4037; }
+  .pi-yellow .pi-read { color: #795548; }
+</style>
 
 <body>
 <!-- LOADER -->
@@ -173,6 +180,17 @@
               <div class="pi-back-title">&#9989; Engineering Quality</div>
               <div class="pi-back-body">Championed automated testing culture at Unisys — JUnit, Mockito, SonarQube, CodeQL, Checkmarx. Reduced production defects 35% and improved release confidence.</div>
               <span class="pi-back-flip" onclick="flipPostit(5,event)">&#8592; flip back</span>
+            </div>
+          </div>
+        </div>
+        <!-- VISITOR GREETING — yellow post-it in hero -->
+        <div class="postit pi-yellow" id="visitor-greeting">
+          <div class="postit-inner">
+            <div class="postit-face">
+              <div class="pi-header">&#128075; Hello there!</div>
+              <div class="pi-sub">visitor from</div>
+              <div class="pi-text" id="vg-city">the world</div>
+              <span class="pi-read" style="text-decoration:none;cursor:default;">Welcome! &#10024;</span>
             </div>
           </div>
         </div>
@@ -516,14 +534,6 @@
     </button>
   </div>
 </div>
-
-  <!-- VISITOR GREETING — styled exactly like the hero post-it notes -->
-  <div id="visitor-greeting" class="vg-postit">
-    <div class="pi-header">👋 Hello there!</div>
-    <div class="pi-sub">visitor from</div>
-    <div class="pi-text" id="vg-city">the world</div>
-    <span class="pi-read" style="text-decoration:none;cursor:default;">Welcome! ✨</span>
-  </div>
 
 <script src="https://platform.linkedin.com/badges/js/profile.js" async defer></script>
 <script src="main.js?v=20250422d"></script>
