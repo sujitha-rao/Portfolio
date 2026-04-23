@@ -13,11 +13,18 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="stylesheet" href="style.css?v=20250422c">
 <style>
-  .pi-yellow { background: #fff176 !important; }
-  .pi-yellow .pi-header { color: #5d4037; }
-  .pi-yellow .pi-sub { color: #795548; }
-  .pi-yellow .pi-text { color: #5d4037; }
-  .pi-yellow .pi-read { color: #795548; }
+  .pi-yellow .postit-face { background: #fff176 !important; }
+  .pi-yellow .postit-face .pi-header { color: #5d4037; }
+  .pi-yellow .postit-face .pi-sub { color: #795548; }
+  .pi-yellow .postit-face .pi-text { color: #5d4037; }
+  .pi-yellow .postit-face .pi-read { color: #795548; }
+  /* Keep visitor post-it always visible — override JS inline styles via !important */
+  #visitor-greeting.postit {
+    opacity: 1 !important;
+    transform: scale(1) rotate(-2deg) !important;
+    pointer-events: auto !important;
+    display: block !important;
+  }
 </style>
 
 <body>
@@ -184,7 +191,7 @@
           </div>
         </div>
         <!-- VISITOR GREETING — yellow post-it in hero -->
-        <div class="postit pi-yellow" id="visitor-greeting">
+        <div class="postit pi-yellow revealed" id="visitor-greeting">
           <div class="postit-inner">
             <div class="postit-face">
               <div class="pi-header">&#128075; Hello there!</div>
