@@ -781,42 +781,42 @@ ${msg}`);
     setTimeout(() => {
       el.classList.remove('vg-show');
       el.classList.add('vg-hide');
-      _chimePending = false; // discard pending chime once post-it is gone
-    }, 5000);
+      _chimePending = false;
+    }, 6000);
   }
 
-  // ── Parallel geo fetch with per-request timeout ───────────────────
+  // ── Geo lookup — best-effort, never blocks the post-it ───────────
   function fetchWithTimeout(url, ms) {
     return Promise.race([
-      fetch(url).then(r => { if (!r.ok) throw new Error('!ok'); return r.json(); }),
+      fetch(url, { mode: 'cors' }).then(r => { if (!r.ok) throw new Error('!ok'); return r.json(); }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
     ]);
   }
 
-  async function fetchCity() {
-    // Only APIs with proper CORS headers for browser requests from GitHub Pages
-    const apis = [
-      { url: 'https://ipapi.co/json/',                extract: d => d?.city     },
-      { url: 'https://ipinfo.io/json',                extract: d => d?.city     },
-      { url: 'https://geolocation-db.com/json/',      extract: d => d?.city     },
-    ];
+  async function tryGetCity() {
+    // ipinfo.io is the most reliable CORS-enabled geo API for browser use
     try {
-      return await Promise.any(
-        apis.map(api =>
-          fetchWithTimeout(api.url, 4000).then(d => {
-            const c = api.extract(d);
-            if (c && c !== 'null' && c.trim().length > 0) return c.trim();
-            return Promise.reject(new Error('no city'));
-          })
-        )
-      );
-    } catch(e) { return null; }
+      const d = await fetchWithTimeout('https://ipinfo.io/json', 3000);
+      if (d?.city && d.city.trim().length > 0) return d.city.trim();
+    } catch(e) {}
+    // geolocation-db as secondary
+    try {
+      const d = await fetchWithTimeout('https://geolocation-db.com/json/', 3000);
+      if (d?.city && d.city !== 'null' && d.city.trim().length > 0) return d.city.trim();
+    } catch(e) {}
+    return null;
   }
 
   // ── Trigger on load ───────────────────────────────────────────────
   window.addEventListener('load', () => {
     setTimeout(() => {
-      fetchCity().then(city => showGreeting(city));
-    }, 1000);
+      // Always show post-it immediately with "the world" fallback
+      showGreeting(null);
+      // Then try to update with actual city (best effort, 2s window)
+      const cityEl = document.getElementById('vg-city');
+      tryGetCity().then(city => {
+        if (city && cityEl) cityEl.textContent = city;
+      });
+    }, 1200);
   });
 })();
