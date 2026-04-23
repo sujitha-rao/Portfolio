@@ -773,16 +773,32 @@ ${msg}`);
   function showGreeting(city) {
     const el     = document.getElementById('visitor-greeting');
     const cityEl = document.getElementById('vg-city');
-    if (!el || !cityEl) return;
-    cityEl.textContent = city || 'the world';
-    el.classList.remove('vg-hide');
-    el.classList.add('vg-show');
+    if (!el) return;
+    if (cityEl) cityEl.textContent = city || 'the world';
+
+    // Set hidden state first (no transition)
+    el.style.transition  = 'none';
+    el.style.opacity     = '0';
+    el.style.transform   = 'translateX(-50%) translateY(50px) rotate(-2.5deg) scale(0.8)';
+    el.style.display     = 'block';
+
+    // Force reflow so browser registers the hidden state
+    void el.offsetHeight;
+
+    // Now animate in
+    el.style.transition  = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease';
+    el.style.opacity     = '1';
+    el.style.transform   = 'translateX(-50%) translateY(0) rotate(-2.5deg) scale(1)';
+
     playChime();
+
+    // Animate out after 7s
     setTimeout(() => {
-      el.classList.remove('vg-show');
-      el.classList.add('vg-hide');
+      el.style.transition = 'transform 0.4s ease, opacity 0.35s ease';
+      el.style.opacity    = '0';
+      el.style.transform  = 'translateX(-50%) translateY(30px) rotate(-2.5deg) scale(0.9)';
       _chimePending = false;
-    }, 6000);
+    }, 7000);
   }
 
   // ── Get city — timezone first (instant), then real geo ───────────
