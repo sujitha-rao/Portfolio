@@ -1,49 +1,43 @@
 # Sujitha Suresh Rao — Personal Portfolio
 
-> **Live site → [sujitha-rao.github.io/portfolio](https://sujitha-rao.github.io/portfolio)**
+> **Live site → [sujitha-rao.github.io/Portfolio](https://sujitha-rao.github.io/Portfolio)**
 
-A fully custom, hand-crafted personal portfolio for a Senior Software Engineer & SAP BTP Solution Architect. Built as a single-repo static site deployed on GitHub Pages — no framework, no build step, just clean HTML, CSS, and JavaScript.
+A fully hand-crafted personal portfolio for a Senior Software Engineer & SAP BTP Solution Architect. Single-repo static site on GitHub Pages — no framework, no build step, just HTML, CSS, and JavaScript.
 
 ---
 
 ## ✨ Features
 
 ### Design & Animation
-- **Corporate particle canvas background** — floating data nodes labelled with real tech skills (Java, AWS, K8s, SAP BTP…), binary rain columns, animated circuit traces with travelling pulse dots, and drifting hexagons
-- **Custom teal cursor** — dot + ring, visible only on desktop (auto-hidden on touch devices via `@media (hover:none)`)
-- **Frosted glass hero card** — glassmorphism text panel with `backdrop-filter: blur` so the canvas animation shows through
-- **Corporate SSR loading screen** — spinning rings + "SSR" initials, auto-dismisses after page load
+- **Particle canvas background** — floating skill nodes (Java, AWS, K8s, SAP BTP…), binary rain columns, animated circuit traces, drifting hexagons
+- **Custom teal cursor** — dot + ring follower; auto-hidden on touch devices
+- **Corporate SSR loading screen** — spinning rings + "SSR" initials, auto-dismisses on load
+- **Typewriter role cycling** in hero
+
+### Hero Section
+- Real profile photo in a gradient-bordered circle
+- **Visitor greeting post-it** (yellow) — top of hero, shows visitor's city via `ipinfo.io`, styled with Caveat + Jakarta Sans fonts
+- **Click-to-reveal post-it notes** — 3-column flex layout (left col | photo | right col) on desktop; swipeable carousel on mobile. Each post-it flips 3D to reveal achievement detail. Chalk sound + star sparkle on reveal.
 
 ### Sections
+
 | # | Section | Highlights |
 |---|---------|------------|
-| Hero | Intro | Typewriter role cycling, photo + click-to-reveal post-it notes (3-col desktop / swipeable carousel mobile) |
-| 01 | About | Bio + 5 certifications linked to Credly |
-| 02 | Experience | Animated timeline — SAP Concur, SAP Labs, Unisys, Spectrum |
-| 03 | Skills | 6 colour-coded category cards with staggered pill animations |
-| 04 | Projects | 6 cards with live iframe (Boarding Pass) + embedded screenshots |
-| 05 | Education | Georgia Tech logo + MEC |
-| 06 | Resume | Open in new tab / Download PDF — no iframe embed |
-| 07 | Wall of Love | 4 real verbatim LinkedIn testimonials + visitor submission form |
-| 08 | Connect | Email + LinkedIn in one row |
-| 09 | Portfolio Analytics | Live visit counter, visitor location, traffic source word clouds |
-
-### Post-it Notes
-- **Desktop**: three-column flex layout — left column | photo | right column. Click photo to reveal each post-it one by one with chalk sound + star sparkle animation. Tap each post-it to flip 3D and read the achievement detail.
-- **Mobile**: vertical stacked cards below the photo, hidden until photo is tapped.
+| Hero | Intro | Visitor post-it · typewriter roles · photo + achievement post-its |
+| 01 | About | Bio + 5 Credly-linked certifications |
+| 02 | Experience | Animated timeline — SAP Concur · SAP Labs · Unisys · Spectrum |
+| 03 | Skills | 6 colour-coded category cards, staggered pill animations |
+| 04 | Projects | 6 cards — live iframe (Boarding Pass Re-Imagined) + base64 screenshots |
+| 05 | Education | Georgia Tech (OMSCS) + MEC with logos |
+| 06 | Resume | Inline PDF embed + download button |
+| 07 | Wall of Love | 4 real verbatim LinkedIn testimonials + visitor submission form (mailto) |
+| 08 | Connect | LinkedIn badge + "Get in Touch" CTA opens chat widget |
 
 ### AI Chat Widget (bottom-right)
 - Persona: *Sujitha's AI Assistant*
-- Knowledge base covering experience, tech stack, certifications, education, location, job opportunities, and more
-- Collects visitor email, then emails the full conversation to `sujitharao93@gmail.com` via **FormSubmit.co** — visitor is CC'd automatically
-- No API key required
-
-### Portfolio Analytics
-- Tracks **total visits** per page load (starts at 51, increments on every load including refresh)
-- Detects **visitor location** via `ipinfo.io` and stores unique cities in `localStorage`
-- Detects **traffic source** (LinkedIn / GitHub / Direct / Other) from `document.referrer`
-- Renders **word clouds** for Locations and Traffic Sources — sized proportionally to frequency
-- All data stored in `localStorage` — no backend, no privacy risk, no external dependency for the counter
+- Knowledge base: experience, skills, certifications, education, availability
+- Collects visitor email → emails full transcript to `sujitharao93@gmail.com` via **FormSubmit.co** (visitor CC'd)
+- No API key required for local knowledge-base mode
 
 ---
 
@@ -51,14 +45,11 @@ A fully custom, hand-crafted personal portfolio for a Senior Software Engineer &
 
 ```
 /
-├── index.html       — Full page HTML (all sections, chat widget, loader)
+├── index.html       — Full page (all sections, chat widget, loader, visitor post-it)
 ├── style.css        — All styles (responsive breakpoints, animations, components)
-├── main.js          — All JavaScript (canvas, cursor, post-its, chat, analytics)
-├── resume.pdf       — Served as static asset, linked from Resume section
-├── photo.jpeg       — Profile photo (base64-embedded in HTML for offline support)
-├── worker/
-│   ├── index.js     — Cloudflare Worker (Claude AI proxy + Resend email — optional)
-│   └── DEPLOY.md    — 5-minute deployment guide for the worker
+├── main.js          — All JS (canvas, cursor, post-its, chat, visitor greeting)
+├── resume.pdf       — Static asset linked from Resume section
+├── photo.jpeg       — Profile photo (base64-embedded in HTML)
 └── README.md
 ```
 
@@ -66,35 +57,22 @@ A fully custom, hand-crafted personal portfolio for a Senior Software Engineer &
 
 ## 🚀 Deployment
 
-The site is deployed via **GitHub Pages** from the `main` branch root.
+Deployed via **GitHub Pages** from the `main` branch root.
 
 ```
 Settings → Pages → Source: Deploy from branch → Branch: main → / (root)
 ```
 
-Any `git push` to `main` automatically updates the live site within ~60 seconds.
+Any `git push` to `main` updates the live site within ~60 seconds.
 
 ---
 
-## ✉️ Email Setup (FormSubmit — one-time activation)
+## ✉️ Email Setup (FormSubmit — one-time)
 
-Chat conversations are emailed via [FormSubmit.co](https://formsubmit.co) — completely free, no API key needed.
-
-1. A visitor fills in their email in the chat widget and sends a message
-2. FormSubmit sends the first-ever submission as an **activation email** to `sujitharao93@gmail.com`
-3. **Click the activation link** (one-time only)
-4. All future chat transcripts are delivered automatically — visitor is CC'd
-
----
-
-## ⚙️ Optional: Cloudflare Worker (Claude AI responses)
-
-To power the chat with real Claude AI responses (instead of the local knowledge base):
-
-1. See `worker/DEPLOY.md` for step-by-step instructions
-2. Deploy `worker/index.js` to Cloudflare Workers (free tier)
-3. Set env vars: `ANTHROPIC_API_KEY` and `RESEND_API_KEY`
-4. Update `WORKER_URL` in `main.js`
+1. Visitor enters email in the chat widget and sends a message
+2. FormSubmit sends an **activation email** to `sujitharao93@gmail.com`
+3. **Click the activation link** once
+4. All future chat transcripts deliver automatically; visitor is CC'd
 
 ---
 
@@ -104,11 +82,9 @@ To power the chat with real Claude AI responses (instead of the local knowledge 
 |-------|--------|
 | Hosting | GitHub Pages |
 | Languages | HTML5 · CSS3 · Vanilla JavaScript (ES2022) |
-| Fonts | DM Serif Display · DM Mono · Plus Jakarta Sans · Caveat (Google Fonts) |
+| Fonts | DM Serif Display · DM Mono · Plus Jakarta Sans · Caveat |
 | Email | FormSubmit.co (free, no API key) |
-| Location | ipinfo.io (free tier) |
-| Analytics | localStorage (no backend) |
-| Optional worker | Cloudflare Workers (free tier) |
+| Visitor location | ipinfo.io (free tier) |
 
 ---
 
@@ -118,15 +94,15 @@ To power the chat with real Claude AI responses (instead of the local knowledge 
 |------------|--------|
 | > 960px | Two-column hero, 3-col post-its |
 | ≤ 960px | Single-column, post-it carousel |
-| ≤ 640px | Full mobile — 16px base, all grids single-column |
-| ≤ 400px | Small phone — compact padding, smaller photo |
+| ≤ 640px | Full mobile — 16px base, single-column grids |
+| ≤ 400px | Small phone — compact padding |
 
 ---
 
 ## 📄 License
 
-Personal portfolio — all rights reserved. Not intended as a template.
+Personal portfolio — all rights reserved. Not a template.
 
 ---
 
-*Built with zero frameworks. Every animation, layout, and interaction hand-coded.*
+*Zero frameworks. Every animation, layout, and interaction hand-coded.*
