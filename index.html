@@ -14,11 +14,37 @@
 <link rel="stylesheet" href="style.css?v=20250422c">
 <style>
   .pi-yellow .postit-face { background: #fff176 !important; }
-  .pi-yellow .postit-face .pi-header { color: #5d4037; }
-  .pi-yellow .postit-face .pi-sub { color: #795548; }
-  .pi-yellow .postit-face .pi-text { color: #5d4037; }
-  .pi-yellow .postit-face .pi-read { color: #795548; }
-  /* Keep visitor post-it always visible — override JS inline styles via !important */
+  .pi-yellow .postit-face .pi-header {
+    color: #3e2723;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .pi-yellow .postit-face .pi-sub {
+    color: #5d4037;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+  .pi-yellow .postit-face .pi-text {
+    color: #3e2723;
+    font-family: 'Caveat', cursive;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 4px 0 6px;
+  }
+  .pi-yellow .postit-face .pi-read {
+    color: #795548;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  /* Keep visitor post-it always visible — override JS inline styles */
   #visitor-greeting.postit {
     opacity: 1 !important;
     transform: scale(1) rotate(-2deg) !important;
@@ -72,7 +98,7 @@
         </div>
       </div>
     </div>
-    <div class="hero-eyebrow">Based in Atlanta, Georgia</div>
+
     <h1 class="hero-name">Sujitha <em>Suresh Rao</em></h1>
     <div class="hero-roles"><span id="typed-text"></span><span class="cursor-blink"></span></div>
     <p class="hero-desc">9+ years delivering production-grade Java &amp; cloud-native systems across SAP ecosystems. SAP BTP Certified Architect &middot; AWS &amp; Kubernetes practitioner &middot; Georgia Tech MS student (part-time). Open to conversations, connections, and new opportunities.</p>
